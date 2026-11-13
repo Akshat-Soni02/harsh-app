@@ -1,4 +1,4 @@
-package com.heroroutine.app.ui.champion
+package com.heroroutine.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
