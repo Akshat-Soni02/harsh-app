@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">HeroRoutine</string>
+    <string name="notification_channel_name">HeroRoutine Reminders</string>
+    <string name="notification_channel_desc">Daily exercise and session alerts</string>
+</resources>
