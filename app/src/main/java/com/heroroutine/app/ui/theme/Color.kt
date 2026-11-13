@@ -2,21 +2,25 @@ package com.heroroutine.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val HeroGreen = Color(0xFF2E7D32)
-val HeroGreenDark = Color(0xFF1B5E20)
-val HeroGreenLight = Color(0xFFA5D6A7)
-val HeroGreenSoft = Color(0xFFE8F5E9)
+val PastelPurple = Color(0xFF8B5CF6)
+val PastelPurpleLight = Color(0xFFDDD6FE)
+val PastelOrange = Color(0xFFF97316)
+val PastelOrangeLight = Color(0xFFFFEDD5)
+val PastelYellow = Color(0xFFFDE047)
+val PastelBlue = Color(0xFF3B82F6)
+val PastelBlueLight = Color(0xFFDBEAFE)
+val PastelGreen = Color(0xFF10B981)
+val PastelGreenLight = Color(0xFFD1FAE5)
+val PastelRed = Color(0xFFEF4444)
+val PastelRedLight = Color(0xFFFEE2E2)
 
-val HeroGold = Color(0xFFFFB300)
-val HeroGoldLight = Color(0xFFFFF8E1)
+val BackgroundLight = Color(0xFFF8FAFC)
+val CardWhite = Color(0xFFFFFFFF)
 
-val HeroBlue = Color(0xFF1976D2)
-val HeroBlueSoft = Color(0xFFE3F2FD)
+val TextDark = Color(0xFF1E293B)
+val TextGray = Color(0xFF64748B)
 
-val HeroCoral = Color(0xFFFF7043)
-val CardBackground = Color(0xFFFFFFFF)
-val SurfaceBackground = Color(0xFFF7F9FA)
-
-val TextPrimary = Color(0xFF1C1B1F)
-val TextSecondary = Color(0xFF49454F)
-val CompletedGreen = Color(0xFF43A047)
+val CompletedGreen = PastelGreen
+val HeroGreen = PastelPurple // Re-mapping old references to Purple to avoid breaking
+val HeroGreenDark = Color(0xFF6D28D9)
+val HeroGold = PastelYellow

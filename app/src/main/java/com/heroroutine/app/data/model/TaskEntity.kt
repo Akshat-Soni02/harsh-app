@@ -28,5 +28,6 @@ data class TaskEntity(
     val audioFilePath: String? = null,
     val referencePhotoPath: String? = null,
     val orderIndex: Int = 0,
-    val notes: String? = null
+    val notes: String? = null,
+    val bodyParts: String = "" // Comma separated list of body parts
 )

@@ -3,10 +3,7 @@ package com.heroroutine.app.ui.guardian
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -29,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.heroroutine.app.data.model.SessionEntity
-import com.heroroutine.app.ui.theme.HeroGreen
+import com.heroroutine.app.ui.theme.PastelPurple
 
 @Composable
 fun SessionEditorDialog(
@@ -64,25 +61,17 @@ fun SessionEditorDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text(
-                    text = "Select Icon Emoji:",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
+                Text("Select Icon Emoji:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(emojis) { emoji ->
                         val isSelected = emoji == selectedEmoji
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) HeroGreen.copy(alpha = 0.2f) else Color(0xFFF0F0F0),
+                            color = if (isSelected) PastelPurple.copy(alpha = 0.2f) else Color(0xFFF0F0F0),
                             modifier = Modifier.clickable { selectedEmoji = emoji }
                         ) {
-                            Text(
-                                text = emoji,
-                                fontSize = 24.sp,
-                                modifier = Modifier.padding(10.dp)
-                            )
+                            Text(emoji, fontSize = 24.sp, modifier = Modifier.padding(10.dp))
                         }
                     }
                 }
@@ -99,19 +88,13 @@ fun SessionEditorDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (title.isNotBlank()) {
-                        onSave(title.trim(), selectedEmoji, targetTime.trim())
-                    }
+                    if (title.isNotBlank()) onSave(title.trim(), selectedEmoji, targetTime.trim())
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = HeroGreen)
-            ) {
-                Text("Save")
-            }
+                colors = ButtonDefaults.buttonColors(containerColor = PastelPurple)
+            ) { Text("Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }

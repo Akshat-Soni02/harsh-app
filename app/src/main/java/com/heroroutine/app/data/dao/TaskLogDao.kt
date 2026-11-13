@@ -15,6 +15,9 @@ interface TaskLogDao {
     @Query("SELECT * FROM task_logs WHERE taskId = :taskId ORDER BY timestamp ASC")
     fun getLogsForTask(taskId: Long): Flow<List<TaskLogEntity>>
 
+    @Query("SELECT * FROM task_logs ORDER BY timestamp ASC")
+    fun getAllLogs(): Flow<List<TaskLogEntity>>
+
     @Query("SELECT * FROM task_logs WHERE taskId = :taskId AND dateEpochDay = :epochDay LIMIT 1")
     suspend fun getLogForTaskOnDay(taskId: Long, epochDay: Long): TaskLogEntity?
 

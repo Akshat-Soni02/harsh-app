@@ -1,50 +1,47 @@
 package com.heroroutine.app.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = HeroGreen,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
-    primaryContainer = HeroGreenSoft,
+    primary = PastelPurple,
+    onPrimary = Color.White,
+    primaryContainer = PastelPurpleLight,
     onPrimaryContainer = HeroGreenDark,
-    secondary = HeroGold,
-    onSecondary = androidx.compose.ui.graphics.Color.Black,
-    secondaryContainer = HeroGoldLight,
-    onSecondaryContainer = androidx.compose.ui.graphics.Color.Black,
-    tertiary = HeroBlue,
-    background = SurfaceBackground,
-    surface = CardBackground,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary
+    secondary = PastelOrange,
+    onSecondary = Color.White,
+    secondaryContainer = PastelOrangeLight,
+    onSecondaryContainer = Color.Black,
+    tertiary = PastelBlue,
+    background = BackgroundLight,
+    surface = CardWhite,
+    onBackground = TextDark,
+    onSurface = TextDark
 )
 
 @Composable
-fun HeroRoutineTheme(
-    content: @Composable () -> Unit
-) {
-    val colorScheme = LightColorScheme
+fun HeroRoutineTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as? Activity)?.window
-            window?.statusBarColor = HeroGreenDark.toArgb()
-            window?.navigationBarColor = HeroGreenDark.toArgb()
+            window?.statusBarColor = BackgroundLight.toArgb()
+            window?.navigationBarColor = BackgroundLight.toArgb()
             if (window != null) {
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
             }
         }
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = LightColorScheme,
         typography = Typography,
         content = content
     )

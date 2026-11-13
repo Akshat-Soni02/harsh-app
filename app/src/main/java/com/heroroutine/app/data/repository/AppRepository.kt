@@ -22,6 +22,7 @@ class AppRepository(private val database: AppDatabase) {
     val allSessions: Flow<List<SessionEntity>> = database.sessionDao().getAllSessions()
     val allTasks: Flow<List<TaskEntity>> = database.taskDao().getAllTasks()
     val allPhotos: Flow<List<ProgressPhotoEntity>> = database.progressPhotoDao().getAllPhotos()
+    val allLogs: Flow<List<TaskLogEntity>> = database.taskLogDao().getAllLogs()
 
     fun getTasksForSession(sessionId: Long): Flow<List<TaskEntity>> =
         database.taskDao().getTasksForSession(sessionId)
@@ -76,11 +77,6 @@ class AppRepository(private val database: AppDatabase) {
     suspend fun deleteProgressPhoto(photo: ProgressPhotoEntity) =
         database.progressPhotoDao().deletePhoto(photo)
 
-    /**
-     * Forgiving Streak Calculation:
-     * A day counts as successful if the champion completes at least 60% of the total tasks,
-     * so they never feel disheartened if they couldn't finish every single exercise.
-     */
     fun calculateStreakFlow(): Flow<StreakInfo> {
         val todayEpoch = LocalDate.now().toEpochDay()
 
@@ -97,7 +93,6 @@ class AppRepository(private val database: AppDatabase) {
             var completedToday = false
             var todayPercent = 0f
 
-            // Check today
             val todayCount = database.taskLogDao().getCompletedCountForDay(todayEpoch)
             todayPercent = (todayCount.toFloat() / totalTaskCount.toFloat()).coerceIn(0f, 1f)
             if (todayCount >= threshold) {
@@ -105,11 +100,9 @@ class AppRepository(private val database: AppDatabase) {
                 streak++
                 checkDay--
             } else {
-                // If today is not yet reached threshold, check yesterday to keep streak active
                 checkDay--
             }
 
-            // Count backwards consecutive days meeting threshold
             while (true) {
                 val dayCount = database.taskLogDao().getCompletedCountForDay(checkDay)
                 if (dayCount >= threshold) {

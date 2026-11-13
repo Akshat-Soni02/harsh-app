@@ -6,11 +6,13 @@ import android.app.NotificationManager
 import android.os.Build
 import com.heroroutine.app.data.db.AppDatabase
 import com.heroroutine.app.data.repository.AppRepository
+import com.heroroutine.app.data.repository.PreferencesManager
 
 class HeroRoutineApp : Application() {
 
     val database by lazy { AppDatabase.getDatabase(this) }
     val repository by lazy { AppRepository(database) }
+    val preferencesManager by lazy { PreferencesManager(this) }
 
     override fun onCreate() {
         super.onCreate()

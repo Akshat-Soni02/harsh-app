@@ -39,7 +39,7 @@ class Converters {
         TaskLogEntity::class,
         ProgressPhotoEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -61,66 +61,11 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "heroroutine_database"
                 )
-                .addCallback(object : Callback() {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        super.onCreate(db)
-                        // Pre-populate with initial welcoming routine
-                        INSTANCE?.let { database ->
-                            CoroutineScope(Dispatchers.IO).launch {
-                                populateInitialData(database)
-                            }
-                        }
-                    }
-                })
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
                 instance
             }
-        }
-
-        private suspend fun populateInitialData(database: AppDatabase) {
-            val morningSessionId = database.sessionDao().insertSession(
-                SessionEntity(
-                    title = "Morning Routine",
-                    iconEmoji = "☀️",
-                    orderIndex = 0,
-                    targetTime = "09:00"
-                )
-            )
-
-            database.taskDao().insertTask(
-                TaskEntity(
-                    sessionId = morningSessionId,
-                    title = "Arm Raises",
-                    taskType = TaskType.EXERCISE,
-                    targetReps = 10,
-                    orderIndex = 0,
-                    notes = "Reach up as high as comfortable"
-                )
-            )
-
-            database.taskDao().insertTask(
-                TaskEntity(
-                    sessionId = morningSessionId,
-                    title = "Knee Lifts",
-                    taskType = TaskType.EXERCISE,
-                    targetReps = 8,
-                    orderIndex = 1,
-                    notes = "Lift gently while seated"
-                )
-            )
-
-            database.taskDao().insertTask(
-                TaskEntity(
-                    sessionId = morningSessionId,
-                    title = "Deep Breathing & Hydration",
-                    taskType = TaskType.GENERAL,
-                    targetDurationSeconds = 60,
-                    orderIndex = 2,
-                    notes = "Take 3 deep breaths and drink water"
-                )
-            )
         }
     }
 }

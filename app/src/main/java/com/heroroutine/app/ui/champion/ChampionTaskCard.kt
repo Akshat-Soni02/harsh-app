@@ -7,8 +7,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,16 +27,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,38 +54,25 @@ import coil.compose.AsyncImage
 import com.heroroutine.app.data.model.TaskEntity
 import com.heroroutine.app.data.model.TaskType
 import com.heroroutine.app.ui.theme.CompletedGreen
-import com.heroroutine.app.ui.theme.HeroGold
-import com.heroroutine.app.ui.theme.HeroGreen
-import com.heroroutine.app.ui.theme.HeroGreenSoft
+import com.heroroutine.app.ui.theme.PastelBlue
+import com.heroroutine.app.ui.theme.PastelPurple
+import com.heroroutine.app.ui.theme.PastelPurpleLight
+import com.heroroutine.app.ui.theme.PastelYellow
+import kotlinx.coroutines.delay
 import java.io.File
 
 @Composable
 fun ChampionTaskCard(
     task: TaskEntity,
-    isCompleted: Boolean,
+    isUndoState: Boolean,
     isPlayingAudio: Boolean,
+    isHinglish: Boolean,
     onToggleCompleted: (Boolean) -> Unit,
     onPlayAudio: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val vibrator = context.getSystemService(Vibrator::class.java)
-
-    val scaleAnim by animateFloatAsState(
-        targetValue = if (isCompleted) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-
-    val cardColor by animateColorAsState(
-        targetValue = if (isCompleted) HeroGreenSoft else Color.White,
-        label = "cardColor"
-    )
-
-    val borderColor by animateColorAsState(
-        targetValue = if (isCompleted) CompletedGreen else Color(0xFFE0E0E0),
-        label = "borderColor"
-    )
+    val vibrator = remember { context.getSystemService(Vibrator::class.java) }
 
     fun triggerVibration() {
         try {
@@ -99,25 +87,87 @@ fun ChampionTaskCard(
         }
     }
 
+    if (isUndoState) {
+        // Slim Undo Card
+        var progress by remember { mutableFloatStateOf(1f) }
+        LaunchedEffect(Unit) {
+            while (progress > 0f) {
+                delay(50)
+                progress -= 0.01f
+            }
+        }
+        
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = PastelPurpleLight),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isHinglish) "Shabaash! Ho Gaya 🌟" else "Great Job! Done 🌟",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PastelPurple
+                    )
+                    
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White,
+                        modifier = Modifier.clickable { 
+                            triggerVibration()
+                            onToggleCompleted(false) 
+                        }
+                    ) {
+                        Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Undo, contentDescription = "Undo", tint = PastelPurple, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isHinglish) "Undo" else "Undo", color = PastelPurple, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(4.dp),
+                    color = PastelPurple,
+                    trackColor = Color.Transparent
+                )
+            }
+        }
+        return
+    }
+
+    val scaleAnim by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .scale(scaleAnim),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        border = BorderStroke(if (isCompleted) 3.dp else 1.5.dp, borderColor),
-        elevation = CardDefaults.cardElevation(if (isCompleted) 2.dp else 6.dp)
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
-            // 1. Massive Reference Photo / Visual Cue
+            // Massive Image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1.6f)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color(0xFFF3F4F6)),
+                    .aspectRatio(1.3f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFFF1F5F9)),
                 contentAlignment = Alignment.Center
             ) {
                 if (!task.referencePhotoPath.isNullOrEmpty() && File(task.referencePhotoPath).exists()) {
@@ -128,152 +178,91 @@ fun ChampionTaskCard(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Default friendly exercise visual placeholder
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = if (task.taskType == TaskType.EXERCISE) "🤸‍♂️" else "✨",
-                            fontSize = 64.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Reference Photo",
-                            fontSize = 14.sp,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                // If completed, celebratory badge over image
-                if (isCompleted) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(CompletedGreen.copy(alpha = 0.25f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = CompletedGreen,
-                            shadowElevation = 6.dp
-                        ) {
-                            Text(
-                                text = "DONE! 🌟",
-                                color = Color.White,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = if (task.taskType == TaskType.EXERCISE) "🤸‍♂️" else "✨",
+                        fontSize = 80.sp
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // 2. Title & Target Info
+            // Title & Reps Count
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = task.title,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF1C1B1F)
-                    )
+                Text(
+                    text = task.title,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF1E293B),
+                    modifier = Modifier.weight(1f)
+                )
 
-                    if (task.taskType == TaskType.EXERCISE && task.targetReps > 0) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFE8F5E9)
-                        ) {
-                            Text(
-                                text = "🔁 Repeat ${task.targetReps} times",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = HeroGreen
-                            )
-                        }
-                    } else if (task.targetDurationSeconds > 0) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFE3F2FD)
-                        ) {
-                            Text(
-                                text = "⏱️ ${task.targetDurationSeconds} seconds",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1565C0)
-                            )
-                        }
-                    }
+                if (task.taskType == TaskType.EXERCISE && task.targetReps > 0) {
+                    Text(
+                        text = "${task.targetReps}",
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Black,
+                        color = PastelPurple
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Action Buttons: Big Listen Button + Giant Done Checkmark
+            // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Listen Button (Only if voice audio is attached)
+                // Listen Button
                 if (!task.audioFilePath.isNullOrEmpty() && File(task.audioFilePath).exists()) {
-                    FilledIconButton(
-                        onClick = onPlayAudio,
+                    Surface(
                         modifier = Modifier
-                            .height(68.dp)
-                            .weight(1f),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = if (isPlayingAudio) HeroGold else Color(0xFFF0F2F5)
-                        )
+                            .height(76.dp)
+                            .weight(1f)
+                            .clickable { onPlayAudio() },
+                        shape = RoundedCornerShape(24.dp),
+                        color = if (isPlayingAudio) PastelYellow else Color(0xFFF8FAFC),
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxSize(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = if (isPlayingAudio) Icons.Default.Stop else Icons.Default.VolumeUp,
-                                contentDescription = "Listen to Voice Guidance",
-                                tint = if (isPlayingAudio) Color.Black else HeroGreen,
-                                modifier = Modifier.size(32.dp)
+                                imageVector = if (isPlayingAudio) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = if (isPlayingAudio) Color.Black else PastelBlue,
+                                modifier = Modifier.size(36.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isPlayingAudio) "Playing..." else "Listen",
-                                fontSize = 18.sp,
+                                text = if (isHinglish) "Suno" else "Listen",
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isPlayingAudio) Color.Black else HeroGreen
+                                color = if (isPlayingAudio) Color.Black else PastelBlue
                             )
                         }
                     }
                 }
 
-                // Giant Checkmark Button
+                // DONE Button
                 Surface(
                     modifier = Modifier
-                        .height(68.dp)
-                        .weight(if (!task.audioFilePath.isNullOrEmpty()) 1.2f else 1f)
+                        .height(76.dp)
+                        .weight(1.3f)
                         .clickable {
                             triggerVibration()
-                            onToggleCompleted(!isCompleted)
+                            onToggleCompleted(true)
                         },
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (isCompleted) CompletedGreen else Color(0xFFE8F5E9),
-                    border = BorderStroke(2.dp, CompletedGreen),
-                    shadowElevation = if (isCompleted) 2.dp else 4.dp
+                    shape = RoundedCornerShape(24.dp),
+                    color = CompletedGreen,
+                    shadowElevation = 4.dp
                 ) {
                     Row(
                         modifier = Modifier.fillMaxSize(),
@@ -282,16 +271,16 @@ fun ChampionTaskCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = if (isCompleted) "Completed" else "Mark Complete",
-                            tint = if (isCompleted) Color.White else CompletedGreen,
-                            modifier = Modifier.size(36.dp)
+                            contentDescription = "Done",
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = if (isCompleted) "DONE!" else "COMPLETE",
-                            fontSize = 20.sp,
+                            text = if (isHinglish) "Ho Gaya" else "DONE",
+                            fontSize = 24.sp,
                             fontWeight = FontWeight.Black,
-                            color = if (isCompleted) Color.White else CompletedGreen
+                            color = Color.White
                         )
                     }
                 }

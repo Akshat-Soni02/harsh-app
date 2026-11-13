@@ -19,13 +19,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.InsertPhoto
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -61,9 +60,10 @@ import coil.compose.AsyncImage
 import com.heroroutine.app.data.model.SessionEntity
 import com.heroroutine.app.data.model.TaskEntity
 import com.heroroutine.app.data.model.TaskType
-import com.heroroutine.app.ui.theme.HeroGold
-import com.heroroutine.app.ui.theme.HeroGreen
+import com.heroroutine.app.ui.theme.BackgroundLight
 import com.heroroutine.app.ui.theme.HeroGreenDark
+import com.heroroutine.app.ui.theme.PastelBlue
+import com.heroroutine.app.ui.theme.PastelPurple
 import com.heroroutine.app.viewmodel.AppMode
 import com.heroroutine.app.viewmodel.MainViewModel
 import java.io.File
@@ -75,6 +75,17 @@ fun GuardianScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTaskToDetail by remember { mutableStateOf<TaskEntity?>(null) }
+    val isHinglish by viewModel.isHinglish.collectAsState()
+
+    if (selectedTaskToDetail != null) {
+        TaskDetailScreen(
+            taskId = selectedTaskToDetail!!.id,
+            viewModel = viewModel,
+            onBack = { selectedTaskToDetail = null }
+        )
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -87,18 +98,22 @@ fun GuardianScreen(
                         color = Color.White
                     )
                 },
+                navigationIcon = {
+                    IconButton(onClick = { viewModel.setHinglish(!isHinglish) }) {
+                        Icon(Icons.Default.Translate, contentDescription = "Toggle Language", tint = Color.White)
+                    }
+                },
                 actions = {
-                    // Quick return to Champion Mode
                     Button(
                         onClick = { viewModel.switchMode(AppMode.CHAMPION) },
-                        colors = ButtonDefaults.buttonColors(containerColor = HeroGold),
+                        colors = ButtonDefaults.buttonColors(containerColor = PastelBlue),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         Text(
                             text = "Start Routine 🌟",
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = Color.White
                         )
                     }
                 },
@@ -118,9 +133,9 @@ fun GuardianScreen(
                     icon = { Icon(Icons.Default.FitnessCenter, contentDescription = "Routines") },
                     label = { Text("Routines") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = HeroGreen,
-                        selectedTextColor = HeroGreen,
-                        indicatorColor = HeroGreen.copy(alpha = 0.15f)
+                        selectedIconColor = PastelPurple,
+                        selectedTextColor = PastelPurple,
+                        indicatorColor = PastelPurple.copy(alpha = 0.15f)
                     )
                 )
 
@@ -128,28 +143,16 @@ fun GuardianScreen(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Icon(Icons.Default.ShowChart, contentDescription = "Progress") },
-                    label = { Text("Progress") },
+                    label = { Text("Overall Progress") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = HeroGreen,
-                        selectedTextColor = HeroGreen,
-                        indicatorColor = HeroGreen.copy(alpha = 0.15f)
-                    )
-                )
-
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.InsertPhoto, contentDescription = "Photos") },
-                    label = { Text("Photos") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = HeroGreen,
-                        selectedTextColor = HeroGreen,
-                        indicatorColor = HeroGreen.copy(alpha = 0.15f)
+                        selectedIconColor = PastelPurple,
+                        selectedTextColor = PastelPurple,
+                        indicatorColor = PastelPurple.copy(alpha = 0.15f)
                     )
                 )
             }
         },
-        containerColor = Color(0xFFF7F9FA)
+        containerColor = BackgroundLight
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -157,24 +160,28 @@ fun GuardianScreen(
                 .padding(innerPadding)
         ) {
             when (selectedTab) {
-                0 -> GuardianRoutineManager(viewModel = viewModel)
+                0 -> GuardianRoutineManager(
+                    viewModel = viewModel, 
+                    onTaskClicked = { selectedTaskToDetail = it }
+                )
                 1 -> ProgressAnalyticsView(viewModel = viewModel)
-                2 -> ProgressPhotosView(viewModel = viewModel)
             }
         }
     }
 }
 
 @Composable
-fun GuardianRoutineManager(viewModel: MainViewModel) {
+fun GuardianRoutineManager(
+    viewModel: MainViewModel,
+    onTaskClicked: (TaskEntity) -> Unit
+) {
     val sessions by viewModel.sessions.collectAsState()
     val allTasks by viewModel.allTasks.collectAsState()
 
     var showSessionDialog by remember { mutableStateOf(false) }
     var sessionToEdit by remember { mutableStateOf<SessionEntity?>(null) }
 
-    var showTaskDialog by remember { mutableStateOf(false) }
-    var taskToEdit by remember { mutableStateOf<TaskEntity?>(null) }
+    var showTaskCreateDialog by remember { mutableStateOf(false) }
     var targetSessionIdForNewTask by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
@@ -184,7 +191,7 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
                     sessionToEdit = null
                     showSessionDialog = true
                 },
-                containerColor = HeroGreen,
+                containerColor = PastelPurple,
                 contentColor = Color.White
             ) {
                 Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -209,12 +216,11 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(3.dp)
+                    elevation = CardDefaults.cardElevation(2.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Session Header
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -229,9 +235,6 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    session.targetTime?.let {
-                                        Text(text = "⏰ $it", fontSize = 13.sp, color = Color.Gray)
-                                    }
                                 }
                             }
 
@@ -250,7 +253,6 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Tasks list
                         if (tasks.isEmpty()) {
                             Text(
                                 text = "No exercises added to this session yet.",
@@ -262,33 +264,26 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
                             tasks.forEach { task ->
                                 GuardianTaskItem(
                                     task = task,
-                                    onEdit = {
-                                        taskToEdit = task
-                                        targetSessionIdForNewTask = session.id
-                                        showTaskDialog = true
-                                    },
-                                    onDelete = { viewModel.deleteTask(task) }
+                                    onClick = { onTaskClicked(task) }
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
                             }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Add Task Button
                         Button(
                             onClick = {
-                                taskToEdit = null
                                 targetSessionIdForNewTask = session.id
-                                showTaskDialog = true
+                                showTaskCreateDialog = true
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F8E9)),
-                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PastelPurple.copy(alpha = 0.1f)),
+                            shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add", tint = HeroGreen)
+                            Icon(Icons.Default.Add, contentDescription = "Add", tint = PastelPurple)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Add Exercise to Session", color = HeroGreen, fontWeight = FontWeight.Bold)
+                            Text("Add Exercise", color = PastelPurple, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -311,37 +306,24 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
         )
     }
 
-    if (showTaskDialog && targetSessionIdForNewTask != null) {
+    if (showTaskCreateDialog && targetSessionIdForNewTask != null) {
         TaskEditorDialog(
             sessionId = targetSessionIdForNewTask!!,
-            initialTask = taskToEdit,
-            onDismiss = { showTaskDialog = false },
-            onSave = { title, type, reps, duration, audioPath, photoPath, notes ->
-                if (taskToEdit == null) {
-                    viewModel.createTask(
-                        sessionId = targetSessionIdForNewTask!!,
-                        title = title,
-                        taskType = type,
-                        targetReps = reps,
-                        targetDurationSeconds = duration,
-                        audioFilePath = audioPath,
-                        referencePhotoPath = photoPath,
-                        notes = notes
-                    )
-                } else {
-                    viewModel.updateTask(
-                        taskToEdit!!.copy(
-                            title = title,
-                            taskType = type,
-                            targetReps = reps,
-                            targetDurationSeconds = duration,
-                            audioFilePath = audioPath,
-                            referencePhotoPath = photoPath,
-                            notes = notes
-                        )
-                    )
-                }
-                showTaskDialog = false
+            initialTask = null,
+            onDismiss = { showTaskCreateDialog = false },
+            onSave = { title, type, reps, duration, audioPath, photoPath, notes, bodyParts ->
+                viewModel.createTask(
+                    sessionId = targetSessionIdForNewTask!!,
+                    title = title,
+                    taskType = type,
+                    targetReps = reps,
+                    targetDurationSeconds = duration,
+                    audioFilePath = audioPath,
+                    referencePhotoPath = photoPath,
+                    notes = notes,
+                    bodyParts = bodyParts
+                )
+                showTaskCreateDialog = false
             }
         )
     }
@@ -350,28 +332,28 @@ fun GuardianRoutineManager(viewModel: MainViewModel) {
 @Composable
 fun GuardianTaskItem(
     task: TaskEntity,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = Color(0xFFF9FAFB),
-        modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFF8FAFC),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(14.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                // Photo thumbnail or icon
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFEEEEEE)),
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFE2E8F0)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!task.referencePhotoPath.isNullOrEmpty() && File(task.referencePhotoPath).exists()) {
@@ -382,36 +364,30 @@ fun GuardianTaskItem(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Text(text = if (task.taskType == TaskType.EXERCISE) "🤸" else "✨", fontSize = 20.sp)
+                        Text(text = if (task.taskType == TaskType.EXERCISE) "🤸" else "✨", fontSize = 24.sp)
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
                 Column {
-                    Text(text = task.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(text = task.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1E293B))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (task.taskType == TaskType.EXERCISE) {
-                            Text(text = "${task.targetReps} reps", fontSize = 13.sp, color = HeroGreen, fontWeight = FontWeight.SemiBold)
+                            Text(text = "${task.targetReps} reps", fontSize = 13.sp, color = PastelPurple, fontWeight = FontWeight.SemiBold)
                         } else {
                             Text(text = "General", fontSize = 13.sp, color = Color.Gray)
                         }
                         if (!task.audioFilePath.isNullOrEmpty()) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "🎙️ Voice clip", fontSize = 12.sp, color = Color.DarkGray)
+                            Text(text = "🎙️ Voice", fontSize = 12.sp, color = Color.DarkGray)
                         }
                     }
                 }
             }
 
-            Row {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                }
-            }
+            Icon(Icons.Default.ChevronRight, contentDescription = "Details", tint = Color.Gray)
         }
     }
 }
