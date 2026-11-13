@@ -1,6 +1,8 @@
 package com.heroroutine.app.ui.guardian
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,12 +13,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,8 +38,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.heroroutine.app.ui.theme.CompletedGreen
-import com.heroroutine.app.ui.theme.PastelPurple
+import com.heroroutine.app.ui.theme.CreamBackground
+import com.heroroutine.app.ui.theme.MintGreen
+import com.heroroutine.app.ui.theme.MintGreenDark
+import com.heroroutine.app.ui.theme.MintGreenSoft
+import com.heroroutine.app.ui.theme.SkyBlue
+import com.heroroutine.app.ui.theme.SkyBlueSoft
+import com.heroroutine.app.ui.theme.TextDark
+import com.heroroutine.app.ui.theme.TextMuted
+import com.heroroutine.app.ui.theme.TextSecondary
+import com.heroroutine.app.ui.theme.WarmCardBorder
+import com.heroroutine.app.ui.theme.WarmOrange
+import com.heroroutine.app.ui.theme.WarmOrangeBorder
+import com.heroroutine.app.ui.theme.WarmOrangeSoft
+import com.heroroutine.app.ui.theme.WarmWhite
 import com.heroroutine.app.viewmodel.MainViewModel
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -43,44 +65,117 @@ fun ProgressAnalyticsView(
     val allLogs by viewModel.allLogs.collectAsState()
     val allTasks by viewModel.allTasks.collectAsState()
     val streakInfo by viewModel.streakInfo.collectAsState()
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(CreamBackground)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // Key Metrics
+        // Streak Card
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = PastelPurple),
+            colors = CardDefaults.cardColors(containerColor = WarmOrangeSoft),
+            border = BorderStroke(1.5.dp, WarmOrangeBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Total Streak", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
-                    Text("${streakInfo.currentStreak} Days", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Current Streak",
+                        color = WarmOrange,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${streakInfo.currentStreak} Days",
+                        color = TextDark,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Black
+                    )
                 }
-                Text("🔥", fontSize = 48.sp)
+
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(WarmOrange),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🔥", fontSize = 28.sp)
+                }
             }
         }
-        
-        Text("Weekly Consistency", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(start = 8.dp))
-        
+
+        // Today's Routine Completion Card
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = WarmWhite),
+            border = BorderStroke(1.dp, WarmCardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Today's Progress",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = TextDark
+                    )
+                    Text(
+                        text = "${(streakInfo.todayCompletionPercentage * 100).toInt()}%",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = WarmOrange
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                LinearProgressIndicator(
+                    progress = { streakInfo.todayCompletionPercentage },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color = WarmOrange,
+                    trackColor = Color(0xFFEFE6DA)
+                )
+            }
+        }
+
+        // 7-Day Consistency Matrix
+        Text(
+            text = "Weekly Activity",
+            fontWeight = FontWeight.Black,
+            fontSize = 18.sp,
+            color = TextDark,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = WarmWhite),
+            border = BorderStroke(1.dp, WarmCardBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 val today = LocalDate.now()
                 val startDay = today.minusDays(6)
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -90,23 +185,36 @@ fun ProgressAnalyticsView(
                         val epoch = day.toEpochDay()
                         val logsForDay = allLogs.filter { it.dateEpochDay == epoch && it.completed }
                         val isDone = logsForDay.isNotEmpty()
-                        
+
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                fontWeight = FontWeight.Bold,
+                                color = if (day == today) WarmOrange else TextSecondary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(if (isDone) CompletedGreen else Color(0xFFF1F5F9)),
+                                    .background(if (isDone) MintGreenSoft else Color(0xFFF1F5F9))
+                                    .border(1.dp, if (isDone) MintGreen else WarmCardBorder, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (isDone) {
-                                    Text("${logsForDay.size}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "${logsForDay.size}",
+                                        color = MintGreenDark,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                } else {
+                                    Text(
+                                        text = "0",
+                                        color = TextMuted,
+                                        fontSize = 12.sp
+                                    )
                                 }
                             }
                         }
@@ -114,17 +222,25 @@ fun ProgressAnalyticsView(
                 }
             }
         }
-        
-        Text("Body Parts Worked", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(start = 8.dp))
-        
+
+        // Body Parts Worked Breakdown
+        Text(
+            text = "Targeted Body Areas",
+            fontWeight = FontWeight.Black,
+            fontSize = 18.sp,
+            color = TextDark,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = WarmWhite),
+            border = BorderStroke(1.dp, WarmCardBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 val partsCount = mutableMapOf<String, Int>()
-                
+
                 allLogs.filter { it.completed }.forEach { log ->
                     val task = allTasks.find { it.id == log.taskId }
                     if (task != null && task.bodyParts.isNotBlank()) {
@@ -135,17 +251,63 @@ fun ProgressAnalyticsView(
                         }
                     }
                 }
-                
+
                 if (partsCount.isEmpty()) {
-                    Text("No body parts tracked yet. Add them in exercise details.", color = Color.Gray)
+                    Text(
+                        text = "No body parts tracked yet. Tag body parts when editing exercises.",
+                        color = TextMuted,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
                 } else {
-                    partsCount.entries.sortedByDescending { it.value }.forEach { (part, count) ->
+                    partsCount.entries.sortedByDescending { it.value }.forEachIndexed { index, (part, count) ->
+                        if (index > 0) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(part, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                            Text("$count exercises", color = PastelPurple, fontWeight = FontWeight.Bold)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = WarmOrangeSoft,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.FitnessCenter,
+                                            contentDescription = null,
+                                            tint = WarmOrange,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = part,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MintGreenSoft,
+                                border = BorderStroke(1.dp, MintGreen)
+                            ) {
+                                Text(
+                                    text = "$count completions",
+                                    color = MintGreenDark,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     }
                 }

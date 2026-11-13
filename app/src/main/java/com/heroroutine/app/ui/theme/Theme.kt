@@ -11,19 +11,19 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PastelPurple,
+    primary = WarmOrange,
     onPrimary = Color.White,
-    primaryContainer = PastelPurpleLight,
-    onPrimaryContainer = HeroGreenDark,
-    secondary = PastelOrange,
+    primaryContainer = WarmOrangeSoft,
+    onPrimaryContainer = TextPrimary,
+    secondary = MintGreen,
     onSecondary = Color.White,
-    secondaryContainer = PastelOrangeLight,
-    onSecondaryContainer = Color.Black,
-    tertiary = PastelBlue,
-    background = BackgroundLight,
-    surface = CardWhite,
-    onBackground = TextDark,
-    onSurface = TextDark
+    secondaryContainer = MintGreenSoft,
+    onSecondaryContainer = MintGreenDark,
+    tertiary = SkyBlue,
+    background = CreamBackground,
+    surface = WarmWhite,
+    onBackground = TextPrimary,
+    onSurface = TextPrimary
 )
 
 @Composable

@@ -87,14 +87,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.toggleTaskCompletion(task, todayEpoch, true)
 
                 // Check for celebration (after small delay to let DB update flow)
-                delay(500)
+                delay(300)
                 val currentLogs = repository.getLogsForDay(todayEpoch).stateIn(viewModelScope).value
-                val sessionTasks = allTasks.value.filter { it.sessionId == selectedSessionId.value }
+                val sessionTasks = allTasks.value.filter { it.sessionId == task.sessionId }
                 val sessionTaskIds = sessionTasks.map { it.id }.toSet()
-                val completedSessionTaskIds = currentLogs.filter { it.completed }.map { it.taskId }.toSet()
+                val completedTaskIds = currentLogs.filter { it.completed }.map { it.taskId }.toSet()
                 
-                // If this task completed the whole session
-                if (sessionTaskIds.isNotEmpty() && completedSessionTaskIds.containsAll(sessionTaskIds)) {
+                // If this task completed all tasks in this session
+                if (sessionTaskIds.isNotEmpty() && completedTaskIds.containsAll(sessionTaskIds)) {
                     _showCelebration.value = true
                 }
 
@@ -141,7 +141,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         title: String,
         taskType: TaskType,
         targetReps: Int,
-        targetDurationSeconds: Int,
+        targetSets: Int = 0,
+        targetDurationSeconds: Int = 0,
         audioFilePath: String?,
         referencePhotoPath: String?,
         notes: String?,
@@ -155,6 +156,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     title = title,
                     taskType = taskType,
                     targetReps = targetReps,
+                    targetSets = targetSets,
                     targetDurationSeconds = targetDurationSeconds,
                     audioFilePath = audioFilePath,
                     referencePhotoPath = referencePhotoPath,

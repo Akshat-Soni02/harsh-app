@@ -24,6 +24,7 @@ data class TaskEntity(
     val title: String,
     val taskType: TaskType = TaskType.EXERCISE,
     val targetReps: Int = 10,
+    val targetSets: Int = 0, // 0 = reps only; >0 = sets + reps (e.g. 3 sets [10])
     val targetDurationSeconds: Int = 0,
     val audioFilePath: String? = null,
     val referencePhotoPath: String? = null,
