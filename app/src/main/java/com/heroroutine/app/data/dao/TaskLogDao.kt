@@ -18,6 +18,9 @@ interface TaskLogDao {
     @Query("SELECT * FROM task_logs ORDER BY timestamp ASC")
     fun getAllLogs(): Flow<List<TaskLogEntity>>
 
+    @Query("SELECT * FROM task_logs ORDER BY timestamp ASC")
+    suspend fun getAllLogsList(): List<TaskLogEntity>
+
     @Query("SELECT * FROM task_logs WHERE taskId = :taskId AND dateEpochDay = :epochDay LIMIT 1")
     suspend fun getLogForTaskOnDay(taskId: Long, epochDay: Long): TaskLogEntity?
 
@@ -27,9 +30,15 @@ interface TaskLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLog(log: TaskLogEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLogs(logs: List<TaskLogEntity>)
+
     @Query("DELETE FROM task_logs WHERE taskId = :taskId AND dateEpochDay = :epochDay")
     suspend fun deleteLogForTaskOnDay(taskId: Long, epochDay: Long)
 
     @Query("SELECT COUNT(*) FROM task_logs WHERE completed = 1 AND dateEpochDay = :epochDay")
     suspend fun getCompletedCountForDay(epochDay: Long): Int
+
+    @Query("DELETE FROM task_logs")
+    suspend fun clearAllLogs()
 }

@@ -16,9 +16,18 @@ interface ProgressPhotoDao {
     @Query("SELECT * FROM progress_photos ORDER BY timestamp DESC")
     fun getAllPhotos(): Flow<List<ProgressPhotoEntity>>
 
+    @Query("SELECT * FROM progress_photos ORDER BY timestamp DESC")
+    suspend fun getAllPhotosList(): List<ProgressPhotoEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPhoto(photo: ProgressPhotoEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPhotos(photos: List<ProgressPhotoEntity>)
+
     @Delete
     suspend fun deletePhoto(photo: ProgressPhotoEntity)
+
+    @Query("DELETE FROM progress_photos")
+    suspend fun clearAllPhotos()
 }

@@ -30,6 +30,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -98,6 +100,8 @@ import com.heroroutine.app.viewmodel.MainViewModel
 import java.io.File
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.Year
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Date
@@ -574,12 +578,25 @@ fun TaskDetailScreen(
  * Repetition Progression Chart with visible X-axis dates and Y-axis reps (0, 5, 10, 15, 20...)
  * For exercises with sets, shows total reps (sets × reps) on Y-axis.
  */
+enum class ChartTimeRange {
+    WEEKLY,
+    MONTHLY,
+    YEARLY
+}
+
+/**
+ * Repetition Progression Chart with visible X-axis dates and Y-axis reps.
+ * Supports Weekly, Monthly, and Yearly view modes with unlimited historical navigation (< and > arrows).
+ * For exercises with sets, shows total reps (sets × reps) on Y-axis.
+ */
 @Composable
 fun RepetitionChartCard(
     taskLogs: List<TaskLogEntity>,
     task: TaskEntity
 ) {
     val effectiveTarget = if (task.targetSets > 0) task.targetSets * task.targetReps else task.targetReps
+    var selectedRange by remember { mutableStateOf(ChartTimeRange.WEEKLY) }
+    var timeOffset by remember { mutableStateOf(0) } // 0 = current, -1 = previous, etc.
 
     Card(
         modifier = Modifier
@@ -589,6 +606,7 @@ fun RepetitionChartCard(
         colors = CardDefaults.cardColors(containerColor = WarmWhite)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
+            // Header / Subtitle
             if (task.targetSets > 0) {
                 Text(
                     text = "Total Reps (${task.targetSets} sets × ${task.targetReps} reps = $effectiveTarget target)",
@@ -607,28 +625,162 @@ fun RepetitionChartCard(
                 )
             }
 
-            val validLogs = taskLogs.filter { it.completed && it.repsAchieved > 0 }
-                .sortedBy { it.dateEpochDay }
-                .takeLast(7)
-
-            val formatter = remember { DateTimeFormatter.ofPattern("MMM d") }
-
-            // If empty, fabricate 2 sample points so chart renders cleanly
-            val points = if (validLogs.isEmpty()) {
-                val today = LocalDate.now()
+            // Time Range Switcher (Weekly / Monthly / Yearly)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF1EDE6), RoundedCornerShape(12.dp))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
                 listOf(
-                    Pair(today.minusDays(1).format(formatter), (effectiveTarget * 0.8f).toInt()),
-                    Pair(today.format(formatter), effectiveTarget)
-                )
-            } else {
-                validLogs.map { log ->
-                    val date = LocalDate.ofEpochDay(log.dateEpochDay)
-                    val reps = if (task.targetSets > 0 && log.repsAchieved == task.targetReps) {
-                        task.targetSets * task.targetReps
-                    } else {
-                        log.repsAchieved
+                    ChartTimeRange.WEEKLY to "Weekly",
+                    ChartTimeRange.MONTHLY to "Monthly",
+                    ChartTimeRange.YEARLY to "Yearly"
+                ).forEach { (range, title) ->
+                    val isSelected = selectedRange == range
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                if (selectedRange != range) {
+                                    selectedRange = range
+                                    timeOffset = 0
+                                }
+                            },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) WarmOrange else Color.Transparent
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = title,
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else TextDark
+                            )
+                        }
                     }
-                    Pair(date.format(formatter), reps)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Navigation Controls (< Label >)
+            val rangeLabel = when (selectedRange) {
+                ChartTimeRange.WEEKLY -> {
+                    val endDay = LocalDate.now().plusWeeks(timeOffset.toLong())
+                    val startDay = endDay.minusDays(6)
+                    val fmt = DateTimeFormatter.ofPattern("MMM d")
+                    "${startDay.format(fmt)} - ${endDay.format(fmt)}"
+                }
+                ChartTimeRange.MONTHLY -> {
+                    val month = YearMonth.now().plusMonths(timeOffset.toLong())
+                    month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+                }
+                ChartTimeRange.YEARLY -> {
+                    val year = Year.now().plusYears(timeOffset.toLong())
+                    year.format(DateTimeFormatter.ofPattern("yyyy"))
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { timeOffset-- },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous", tint = TextDark)
+                }
+
+                Text(
+                    text = rangeLabel,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+
+                IconButton(
+                    onClick = { if (timeOffset < 0) timeOffset++ },
+                    enabled = timeOffset < 0,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "Next",
+                        tint = if (timeOffset < 0) TextDark else TextMuted
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Compute Points based on Range
+            val points: List<Pair<String, Int>> = when (selectedRange) {
+                ChartTimeRange.WEEKLY -> {
+                    val endDay = LocalDate.now().plusWeeks(timeOffset.toLong())
+                    val startDay = endDay.minusDays(6)
+                    val dayFmt = DateTimeFormatter.ofPattern("EEE")
+                    (0..6).map { i ->
+                        val currentDay = startDay.plusDays(i.toLong())
+                        val epoch = currentDay.toEpochDay()
+                        val log = taskLogs.firstOrNull { it.dateEpochDay == epoch && it.completed }
+                        val reps = if (log != null) {
+                            if (task.targetSets > 0 && log.repsAchieved == task.targetReps) {
+                                task.targetSets * task.targetReps
+                            } else {
+                                log.repsAchieved
+                            }
+                        } else 0
+                        Pair(currentDay.format(dayFmt), reps)
+                    }
+                }
+                ChartTimeRange.MONTHLY -> {
+                    val currentMonth = YearMonth.now().plusMonths(timeOffset.toLong())
+                    val startEpoch = currentMonth.atDay(1).toEpochDay()
+                    val endEpoch = currentMonth.atEndOfMonth().toEpochDay()
+
+                    val monthLogs = taskLogs.filter { it.completed && it.dateEpochDay in startEpoch..endEpoch }
+                        .sortedBy { it.dateEpochDay }
+
+                    if (monthLogs.isEmpty()) {
+                        listOf(Pair("1st", 0), Pair("15th", 0), Pair("End", 0))
+                    } else {
+                        monthLogs.map { log ->
+                            val date = LocalDate.ofEpochDay(log.dateEpochDay)
+                            val reps = if (task.targetSets > 0 && log.repsAchieved == task.targetReps) {
+                                task.targetSets * task.targetReps
+                            } else {
+                                log.repsAchieved
+                            }
+                            Pair("${date.dayOfMonth}", reps)
+                        }
+                    }
+                }
+                ChartTimeRange.YEARLY -> {
+                    val currentYear = Year.now().plusYears(timeOffset.toLong())
+                    val monthFmt = DateTimeFormatter.ofPattern("MMM")
+                    (1..12).map { monthNum ->
+                        val ym = currentYear.atMonth(monthNum)
+                        val startEpoch = ym.atDay(1).toEpochDay()
+                        val endEpoch = ym.atEndOfMonth().toEpochDay()
+                        val logsInMonth = taskLogs.filter { it.completed && it.dateEpochDay in startEpoch..endEpoch }
+                        val avgReps = if (logsInMonth.isNotEmpty()) {
+                            logsInMonth.map { log ->
+                                if (task.targetSets > 0 && log.repsAchieved == task.targetReps) {
+                                    task.targetSets * task.targetReps
+                                } else {
+                                    log.repsAchieved
+                                }
+                            }.average().toInt()
+                        } else 0
+                        Pair(ym.format(monthFmt), avgReps)
+                    }
                 }
             }
 
@@ -646,7 +798,6 @@ fun RepetitionChartCard(
                     val w = size.width
                     val h = size.height
 
-                    // Margins for axes
                     val leftMargin = 38.dp.toPx()
                     val bottomMargin = 26.dp.toPx()
                     val topMargin = 12.dp.toPx()
@@ -658,7 +809,6 @@ fun RepetitionChartCard(
                     val gridColor = Color(0xFFE5DDD0)
                     val textColor = android.graphics.Color.parseColor("#7E7265")
 
-                    // Draw Y-axis gridlines and labels
                     val textPaint = android.graphics.Paint().apply {
                         color = textColor
                         textSize = 28f
@@ -670,7 +820,6 @@ fun RepetitionChartCard(
                         val yRatio = (stepVal.toFloat() / maxVal.toFloat()).coerceIn(0f, 1f)
                         val yPos = topMargin + chartHeight * (1f - yRatio)
 
-                        // Draw dashed horizontal line
                         drawLine(
                             color = gridColor,
                             start = Offset(leftMargin, yPos),
@@ -679,7 +828,6 @@ fun RepetitionChartCard(
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
                         )
 
-                        // Draw Y-axis text
                         drawContext.canvas.nativeCanvas.drawText(
                             "$stepVal",
                             leftMargin - 10f,
@@ -688,7 +836,6 @@ fun RepetitionChartCard(
                         )
                     }
 
-                    // Draw Line and Points
                     val path = Path()
                     val stepX = if (points.size > 1) chartWidth / (points.size - 1) else chartWidth
 
@@ -703,43 +850,40 @@ fun RepetitionChartCard(
                         if (idx == 0) path.moveTo(offset.x, offset.y) else path.lineTo(offset.x, offset.y)
                     }
 
-                    // Draw connecting orange line
                     drawPath(
                         path = path,
                         color = WarmOrange,
                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                     )
 
-                    // Draw Points and X-axis labels
                     val xTextPaint = android.graphics.Paint().apply {
                         color = textColor
-                        textSize = 26f
+                        textSize = 24f
                         isAntiAlias = true
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
 
                     val valTextPaint = android.graphics.Paint().apply {
                         color = android.graphics.Color.parseColor("#FF8A3D")
-                        textSize = 26f
+                        textSize = 24f
                         isFakeBoldText = true
                         isAntiAlias = true
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
 
                     coords.forEachIndexed { idx, offset ->
-                        // White circle border + orange dot
-                        drawCircle(color = Color.White, radius = 7.dp.toPx(), center = offset)
-                        drawCircle(color = WarmOrange, radius = 5.dp.toPx(), center = offset)
+                        drawCircle(color = Color.White, radius = 6.dp.toPx(), center = offset)
+                        drawCircle(color = WarmOrange, radius = 4.dp.toPx(), center = offset)
 
-                        // Draw value above point
-                        drawContext.canvas.nativeCanvas.drawText(
-                            "${points[idx].second}",
-                            offset.x,
-                            offset.y - 14f,
-                            valTextPaint
-                        )
+                        if (points[idx].second > 0) {
+                            drawContext.canvas.nativeCanvas.drawText(
+                                "${points[idx].second}",
+                                offset.x,
+                                offset.y - 12f,
+                                valTextPaint
+                            )
+                        }
 
-                        // Draw X-axis date label at bottom
                         drawContext.canvas.nativeCanvas.drawText(
                             points[idx].first,
                             offset.x,
@@ -753,8 +897,17 @@ fun RepetitionChartCard(
     }
 }
 
+/**
+ * Monthly Consistency Calendar View for a specific exercise.
+ * Supports < and > arrow navigation to any month in history (e.g. March 2025).
+ */
 @Composable
 fun TaskCalendarCard(taskLogs: List<TaskLogEntity>) {
+    var monthOffset by remember { mutableStateOf(0) }
+    val currentMonth = remember(monthOffset) {
+        YearMonth.now().plusMonths(monthOffset.toLong())
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -763,45 +916,147 @@ fun TaskCalendarCard(taskLogs: List<TaskLogEntity>) {
         colors = CardDefaults.cardColors(containerColor = WarmWhite)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            val today = LocalDate.now()
-            val startDay = today.minusDays(6)
-
+            // Month Navigation Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                for (i in 0..6) {
-                    val day = startDay.plusDays(i.toLong())
-                    val epoch = day.toEpochDay()
-                    val isDone = taskLogs.any { it.dateEpochDay == epoch && it.completed }
+                IconButton(onClick = { monthOffset-- }) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month", tint = TextDark)
+                }
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (day == today) WarmOrange else TextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(if (isDone) MintGreen else Color(0xFFF1F5F9))
-                                .border(1.dp, if (isDone) MintGreen else WarmCardBorder, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isDone) {
-                                Text("✓", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                Text(
+                    text = currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    color = TextDark
+                )
+
+                IconButton(
+                    onClick = { if (monthOffset < 0) monthOffset++ },
+                    enabled = monthOffset < 0
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "Next Month",
+                        tint = if (monthOffset < 0) TextDark else TextMuted
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Day of Week Header
+            val dayHeaders = listOf("M", "T", "W", "T", "F", "S", "S")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                dayHeaders.forEach { d ->
+                    Text(
+                        text = d,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                        modifier = Modifier.width(36.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Calendar Grid
+            val daysInMonth = currentMonth.lengthOfMonth()
+            val firstDayOfWeek = currentMonth.atDay(1).dayOfWeek.value // 1 = Mon ... 7 = Sun
+            val paddingBefore = firstDayOfWeek - 1
+            val totalCells = paddingBefore + daysInMonth
+            val rows = (totalCells + 6) / 7
+
+            val today = LocalDate.now()
+            var completedCount = 0
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (r in 0 until rows) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        for (c in 0 until 7) {
+                            val cellIndex = r * 7 + c
+                            val dayNumber = cellIndex - paddingBefore + 1
+
+                            if (dayNumber in 1..daysInMonth) {
+                                val date = currentMonth.atDay(dayNumber)
+                                val epoch = date.toEpochDay()
+                                val isDone = taskLogs.any { it.dateEpochDay == epoch && it.completed }
+                                if (isDone) completedCount++
+                                val isToday = date == today
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isDone) MintGreenSoft else Color(0xFFF1F5F9))
+                                        .border(
+                                            width = if (isToday) 1.5.dp else 1.dp,
+                                            color = if (isToday) WarmOrange else if (isDone) MintGreen else Color(0xFFE2E8F0),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isDone) {
+                                        Text(
+                                            text = "✓",
+                                            color = MintGreenDark,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Black
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "$dayNumber",
+                                            fontSize = 12.sp,
+                                            fontWeight = if (isToday) FontWeight.Black else FontWeight.Medium,
+                                            color = if (isToday) WarmOrange else TextMuted
+                                        )
+                                    }
+                                }
                             } else {
-                                Text(
-                                    text = "${day.dayOfMonth}",
-                                    fontSize = 12.sp,
-                                    color = TextMuted
-                                )
+                                Box(modifier = Modifier.size(36.dp))
                             }
                         }
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Monthly Summary Footer
+            val consistencyPercent = if (daysInMonth > 0) ((completedCount.toFloat() / daysInMonth.toFloat()) * 100).toInt() else 0
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (completedCount > 0) MintGreenSoft else Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, if (completedCount > 0) MintGreen else WarmCardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Completed $completedCount of $daysInMonth days",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                    Text(
+                        text = "$consistencyPercent% consistency",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        color = if (completedCount > 0) MintGreenDark else TextSecondary
+                    )
                 }
             }
         }

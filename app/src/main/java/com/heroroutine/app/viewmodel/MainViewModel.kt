@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.heroroutine.app.HeroRoutineApp
+import com.heroroutine.app.data.backup.BackupManager
+import com.heroroutine.app.data.backup.BackupStats
 import com.heroroutine.app.data.model.ProgressPhotoEntity
 import com.heroroutine.app.data.model.SessionEntity
 import com.heroroutine.app.data.model.TaskEntity
@@ -19,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.InputStream
+import java.io.OutputStream
 import java.time.LocalDate
 
 enum class AppMode {
@@ -31,6 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = (application as HeroRoutineApp).repository
     val prefsManager = (application as HeroRoutineApp).preferencesManager
     val audioPlayer = AudioPlayerHelper(application)
+    val backupManager = BackupManager(application)
 
     private val _currentMode = MutableStateFlow(AppMode.CHAMPION)
     val currentMode: StateFlow<AppMode> = _currentMode.asStateFlow()
@@ -190,6 +195,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteProgressPhoto(photo: ProgressPhotoEntity) {
         viewModelScope.launch { repository.deleteProgressPhoto(photo) }
+    }
+
+    suspend fun exportBackup(outputStream: OutputStream): Result<BackupStats> {
+        return backupManager.exportBackup(outputStream)
+    }
+
+    suspend fun importBackup(inputStream: InputStream): Result<BackupStats> {
+        return backupManager.importBackup(inputStream)
     }
 
     override fun onCleared() {
