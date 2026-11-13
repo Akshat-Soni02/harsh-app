@@ -33,7 +33,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -44,7 +43,6 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -88,6 +86,7 @@ fun GuardianScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedTaskToDetail by remember { mutableStateOf<TaskEntity?>(null) }
+    var taskEditorSessionId by remember { mutableStateOf<Long?>(null) }
 
     if (selectedTaskToDetail != null) {
         TaskDetailScreen(
@@ -98,40 +97,76 @@ fun GuardianScreen(
         return
     }
 
+    if (taskEditorSessionId != null) {
+        TaskEditorScreen(
+            sessionId = taskEditorSessionId!!,
+            initialTask = null,
+            onBack = { taskEditorSessionId = null },
+            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts ->
+                viewModel.createTask(
+                    sessionId = taskEditorSessionId!!,
+                    title = title,
+                    taskType = type,
+                    targetReps = reps,
+                    targetSets = sets,
+                    targetDurationSeconds = duration,
+                    audioFilePath = audioPath,
+                    referencePhotoPath = photoPath,
+                    notes = notes,
+                    bodyParts = bodyParts
+                )
+                taskEditorSessionId = null
+            }
+        )
+        return
+    }
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Guardian Dashboard",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
-                        color = TextDark
-                    )
-                },
-                navigationIcon = {
-                    // No left icon as requested
-                },
-                actions = {
+            Surface(
+                color = WarmWhite,
+                border = BorderStroke(1.dp, WarmCardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Guardian",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 20.sp,
+                            color = TextDark,
+                            lineHeight = 22.sp
+                        )
+                        Text(
+                            text = "Dashboard",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = TextSecondary,
+                            lineHeight = 15.sp
+                        )
+                    }
+
                     Button(
                         onClick = { viewModel.switchMode(AppMode.CHAMPION) },
                         colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(end = 12.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = "Champion Mode",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             color = Color.White
                         )
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = WarmWhite
-                ),
-                modifier = Modifier.border(1.dp, WarmCardBorder)
-            )
+                }
+            }
         },
         bottomBar = {
             // Strictly 2 tabs: Routines and Progress & Analytics
@@ -178,7 +213,8 @@ fun GuardianScreen(
             when (selectedTab) {
                 0 -> GuardianRoutineManager(
                     viewModel = viewModel,
-                    onTaskClicked = { selectedTaskToDetail = it }
+                    onTaskClicked = { selectedTaskToDetail = it },
+                    onAddTask = { sessionId -> taskEditorSessionId = sessionId }
                 )
                 1 -> ProgressAnalyticsView(viewModel = viewModel)
             }
@@ -189,16 +225,14 @@ fun GuardianScreen(
 @Composable
 fun GuardianRoutineManager(
     viewModel: MainViewModel,
-    onTaskClicked: (TaskEntity) -> Unit
+    onTaskClicked: (TaskEntity) -> Unit,
+    onAddTask: (sessionId: Long) -> Unit
 ) {
     val sessions by viewModel.sessions.collectAsState()
     val allTasks by viewModel.allTasks.collectAsState()
 
     var showSessionDialog by remember { mutableStateOf(false) }
     var sessionToEdit by remember { mutableStateOf<SessionEntity?>(null) }
-
-    var showTaskCreateDialog by remember { mutableStateOf(false) }
-    var targetSessionIdForNewTask by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         floatingActionButton = {
@@ -355,14 +389,13 @@ fun GuardianRoutineManager(
 
                             Spacer(modifier = Modifier.height(14.dp))
 
-                            // "+ Add Task" button
+                            // "Add Task" button
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(16.dp))
                                     .clickable {
-                                        targetSessionIdForNewTask = session.id
-                                        showTaskCreateDialog = true
+                                        onAddTask(session.id)
                                     },
                                 shape = RoundedCornerShape(16.dp),
                                 color = WarmOrangeSoft,
@@ -377,7 +410,7 @@ fun GuardianRoutineManager(
                                 ) {
                                     Icon(Icons.Default.Add, contentDescription = "Add", tint = WarmOrange, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("+ Add Task", color = WarmOrange, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Text("Add Task", color = WarmOrange, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 }
                             }
                         }
@@ -398,29 +431,6 @@ fun GuardianRoutineManager(
                     viewModel.updateSession(sessionToEdit!!.copy(title = title, iconEmoji = emoji, targetTime = time))
                 }
                 showSessionDialog = false
-            }
-        )
-    }
-
-    if (showTaskCreateDialog && targetSessionIdForNewTask != null) {
-        TaskEditorDialog(
-            sessionId = targetSessionIdForNewTask!!,
-            initialTask = null,
-            onDismiss = { showTaskCreateDialog = false },
-            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts ->
-                viewModel.createTask(
-                    sessionId = targetSessionIdForNewTask!!,
-                    title = title,
-                    taskType = type,
-                    targetReps = reps,
-                    targetSets = sets,
-                    targetDurationSeconds = duration,
-                    audioFilePath = audioPath,
-                    referencePhotoPath = photoPath,
-                    notes = notes,
-                    bodyParts = bodyParts
-                )
-                showTaskCreateDialog = false
             }
         )
     }

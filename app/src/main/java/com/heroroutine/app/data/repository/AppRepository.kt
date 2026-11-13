@@ -57,12 +57,13 @@ class AppRepository(private val database: AppDatabase) {
     suspend fun toggleTaskCompletion(task: TaskEntity, epochDay: Long, isCompleted: Boolean) {
         val existing = database.taskLogDao().getLogForTaskOnDay(task.id, epochDay)
         if (isCompleted) {
+            val totalReps = if (task.targetSets > 0) task.targetSets * task.targetReps else task.targetReps
             val log = TaskLogEntity(
                 taskId = task.id,
                 dateEpochDay = epochDay,
                 timestamp = System.currentTimeMillis(),
                 completed = true,
-                repsAchieved = task.targetReps,
+                repsAchieved = totalReps,
                 durationSecondsAchieved = task.targetDurationSeconds
             )
             database.taskLogDao().insertLog(log)

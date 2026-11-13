@@ -27,9 +27,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -118,7 +118,7 @@ fun TaskDetailScreen(
 
     val task = allTasks.find { it.id == taskId }
 
-    var showEditDialog by remember { mutableStateOf(false) }
+    var isEditing by remember { mutableStateOf(false) }
     var showAddPhotoDialog by remember { mutableStateOf(false) }
     var photoNoteInput by remember { mutableStateOf("") }
     var tempPhotoPath by remember { mutableStateOf<String?>(null) }
@@ -142,6 +142,31 @@ fun TaskDetailScreen(
         return
     }
 
+    if (isEditing) {
+        TaskEditorScreen(
+            sessionId = task.sessionId,
+            initialTask = task,
+            onBack = { isEditing = false },
+            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts ->
+                viewModel.updateTask(
+                    task.copy(
+                        title = title,
+                        taskType = type,
+                        targetReps = reps,
+                        targetSets = sets,
+                        targetDurationSeconds = duration,
+                        audioFilePath = audioPath,
+                        referencePhotoPath = photoPath,
+                        notes = notes,
+                        bodyParts = bodyParts
+                    )
+                )
+                isEditing = false
+            }
+        )
+        return
+    }
+
     val taskLogs = allLogs.filter { it.taskId == taskId }
     val taskPhotos = allPhotos.filter { it.taskId == taskId }.sortedByDescending { it.timestamp }
 
@@ -162,7 +187,7 @@ fun TaskDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showEditDialog = true }) {
+                    IconButton(onClick = { isEditing = true }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextSecondary)
                     }
                     IconButton(onClick = {
@@ -336,7 +361,7 @@ fun TaskDetailScreen(
 
                 RepetitionChartCard(
                     taskLogs = taskLogs,
-                    currentTarget = task.targetReps
+                    task = task
                 )
             }
 
@@ -374,9 +399,9 @@ fun TaskDetailScreen(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.AddAPhoto, contentDescription = "Add Photo", tint = WarmOrange, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("+ Add Photo", color = WarmOrange, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Icon(Icons.Default.CameraAlt, contentDescription = "Add Photo", tint = WarmOrange, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add Photo", color = WarmOrange, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
@@ -543,41 +568,19 @@ fun TaskDetailScreen(
             }
         }
     }
-
-    // Edit Task Dialog
-    if (showEditDialog) {
-        TaskEditorDialog(
-            sessionId = task.sessionId,
-            initialTask = task,
-            onDismiss = { showEditDialog = false },
-            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts ->
-                viewModel.updateTask(
-                    task.copy(
-                        title = title,
-                        taskType = type,
-                        targetReps = reps,
-                        targetSets = sets,
-                        targetDurationSeconds = duration,
-                        audioFilePath = audioPath,
-                        referencePhotoPath = photoPath,
-                        notes = notes,
-                        bodyParts = bodyParts
-                    )
-                )
-                showEditDialog = false
-            }
-        )
-    }
 }
 
 /**
  * Repetition Progression Chart with visible X-axis dates and Y-axis reps (0, 5, 10, 15, 20...)
+ * For exercises with sets, shows total reps (sets × reps) on Y-axis.
  */
 @Composable
 fun RepetitionChartCard(
     taskLogs: List<TaskLogEntity>,
-    currentTarget: Int
+    task: TaskEntity
 ) {
+    val effectiveTarget = if (task.targetSets > 0) task.targetSets * task.targetReps else task.targetReps
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -586,6 +589,24 @@ fun RepetitionChartCard(
         colors = CardDefaults.cardColors(containerColor = WarmWhite)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
+            if (task.targetSets > 0) {
+                Text(
+                    text = "Total Reps (${task.targetSets} sets × ${task.targetReps} reps = $effectiveTarget target)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            } else {
+                Text(
+                    text = "Reps achieved (Target: $effectiveTarget reps)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
             val validLogs = taskLogs.filter { it.completed && it.repsAchieved > 0 }
                 .sortedBy { it.dateEpochDay }
                 .takeLast(7)
@@ -596,17 +617,22 @@ fun RepetitionChartCard(
             val points = if (validLogs.isEmpty()) {
                 val today = LocalDate.now()
                 listOf(
-                    Pair(today.minusDays(1).format(formatter), (currentTarget * 0.8f).toInt()),
-                    Pair(today.format(formatter), currentTarget)
+                    Pair(today.minusDays(1).format(formatter), (effectiveTarget * 0.8f).toInt()),
+                    Pair(today.format(formatter), effectiveTarget)
                 )
             } else {
                 validLogs.map { log ->
                     val date = LocalDate.ofEpochDay(log.dateEpochDay)
-                    Pair(date.format(formatter), log.repsAchieved)
+                    val reps = if (task.targetSets > 0 && log.repsAchieved == task.targetReps) {
+                        task.targetSets * task.targetReps
+                    } else {
+                        log.repsAchieved
+                    }
+                    Pair(date.format(formatter), reps)
                 }
             }
 
-            val maxVal = max(20, (points.maxOfOrNull { it.second } ?: currentTarget) + 5)
+            val maxVal = max(20, (points.maxOfOrNull { it.second } ?: effectiveTarget) + 5)
             val ySteps = listOf(maxVal, (maxVal * 0.75f).toInt(), (maxVal * 0.5f).toInt(), (maxVal * 0.25f).toInt(), 0)
 
             Box(

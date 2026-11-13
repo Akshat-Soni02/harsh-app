@@ -137,14 +137,20 @@ fun ChampionTaskCard(
                 // Reps / Sets Display
                 if (task.taskType == TaskType.EXERCISE) {
                     if (task.targetSets > 0) {
-                        // "x sets [Reps]" format
-                        Row(verticalAlignment = Alignment.Bottom) {
+                        // "x sets [Reps]" format with big sets number matching reps in orange
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "${task.targetSets} sets ",
-                                fontSize = 16.sp,
+                                text = "${task.targetSets}",
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Black,
+                                color = WarmOrange
+                            )
+                            Text(
+                                text = " sets ",
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextSecondary,
-                                modifier = Modifier.padding(bottom = 2.dp)
+                                color = TextDark,
+                                modifier = Modifier.padding(horizontal = 2.dp)
                             )
                             Text(
                                 text = "[${task.targetReps}]",

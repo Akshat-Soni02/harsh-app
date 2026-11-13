@@ -1,5 +1,6 @@
 <resources>
-    <color name="primary">#2E7D32</color>
-    <color name="primary_dark">#1B5E20</color>
-    <color name="accent">#FFB300</color>
+    <color name="primary">#FF7A1A</color>
+    <color name="primary_dark">#E66500</color>
+    <color name="accent">#FFA25B</color>
+    <color name="ic_launcher_background">#FF7A1A</color>
 </resources>
