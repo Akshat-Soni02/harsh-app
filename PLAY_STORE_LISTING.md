@@ -1,33 +1,21 @@
-# Google Play Store Listing & Launch Kit
+# Google Play Store Listing & Launch Kit — Pragti
 
 Everything you need to set up, publish, and list your app on the Google Play Console.
 
 ---
 
-## 1. App Name Suggestions
+## 1. Brand Identity & Name
 
-Your feedback: *"the name is a little weird and long... suggest some smaller names with which doctors, patients, and parents can relate to."*
-
-Here are the top curated name suggestions, categorized for different brand styles:
-
-### Top Recommendations (Short, Universal & Relatable)
-
-| Name | Vibe / Meaning | Why Doctors & Patients Love It | Character Count |
-|---|---|---|---|
-| **Kriya** *(Recommended)* | Sanskrit/Hindi for *Action, Purposeful Movement & Practice* | Respected by Indian doctors & families; sounds modern and clean globally. | 5 letters |
-| **Thera** | Short for *Therapy* | Instantly communicates physical therapy & rehabilitation without being clinical or scary. | 5 letters |
-| **Moveo** | Latin for *I Move / In Motion* | Energetic, modern, sounds like a cutting-edge digital health app. | 5 letters |
-| **Stride** | *Step forward, purposeful progress* | Inspiring for patients recovering mobility and physical strength. | 6 letters |
-| **Swasth** | *Healthy, Wholesome, In Harmony* | Deeply relatable across Hindi and Indian contexts; trusted by parents. | 6 letters |
-| **Habito** | *Gentle Daily Habit & Routine* | Simple, friendly, warm, non-intimidating. | 6 letters |
-| **Kinetic** / **Kineto** | *Motion & Physical Energy* | Clinical authority for physiotherapists; clear for patients. | 6–7 letters |
-| **Sahaj** | *Natural, Effortless, Calm* | Ideal for special-needs routines; brings a sense of ease. | 5 letters |
-
-> [!TIP]
-> **Recommended Title for Play Store Listing**:  
-> **Kriya: Therapy & Routine** *(25 characters, well within the 30-character Play Store title limit)*  
-> or  
-> **Thera: Daily Routine & Rehab** *(28 characters)*
+### Selected Name: **Pragti**
+- **Meaning & Root**: Derived from the Hindi / Sanskrit word *प्रगति* (*Pragati*), meaning **Progress, Growth, Advancement, and Upliftment**.
+- **Why the "Pragti" Spelling Works Exceptionally Well**:
+  1. **Clean & Modern (Startup Vibe)**: Dropping the redundant middle 'a' gives it the punchy, modern feel of top health-tech and Indian consumer apps (like *Practo*, *Khatabook*, *Swiggy*, *Zomato*).
+  2. **Distinctive & Uncluttered**: Avoids confusion with generic government initiatives (e.g., PRAGATI platform) or generic corporate trademarks while preserving authentic phonetic pronunciation.
+  3. **Universal Resonance**:
+     - **For Parents**: Represents the heartfelt desire for their child’s everyday advancement and rehabilitation.
+     - **For Champions / Patients**: Positive, encouraging, non-medicalized, and stigma-free.
+     - **For Doctors & Physiotherapists**: Professional and outcome-oriented ("Pragti Report", tracking patient progress).
+  4. **Celebration Cohesion**: The app is called **Pragti** (Progress), while milestone completion celebrations cheer **"Shabaash!"** (Well done!).
 
 ---
 
@@ -35,22 +23,30 @@ Here are the top curated name suggestions, categorized for different brand style
 
 ### App Title (Max 30 characters)
 ```text
-Kriya: Daily Routine & Rehab
+Pragti: Daily Routine & Rehab
 ```
-*(Alternative: `Thera: Routine & Physical Care`)*
+*(Exact length: 29 characters — fits within the strict 30-character Play Store limit)*
+
+*Alternative options:*
+- `Pragti: Daily Habit & Therapy` (29 chars)
+- `Pragti: Routine & Rehab Tracker` (30 chars)
+
+---
 
 ### Short Description (Max 80 characters)
 *Strict limit: 80 characters. High clarity for patients, parents & therapists.*
 ```text
 Daily exercise, therapy routines, and visual habit tracking for champions.
 ```
-*(Length: 73 characters)*
+*(Exact length: 73 characters)*
+
+---
 
 ### Full Description (Max 4,000 characters)
 ```text
-Kriya is a gentle, distraction-free daily routine and physical therapy companion created for champions, families, and therapists. Designed with ultra-clear visual cues, high-contrast layouts, and voice guidance, Kriya makes completing daily rehabilitation exercises and routines simple, rewarding, and stress-free.
+Pragti is a gentle, distraction-free daily routine and physical therapy companion created for champions, families, and therapists. Designed with ultra-clear visual cues, high-contrast layouts, and voice guidance, Pragti makes completing daily rehabilitation exercises and routines simple, rewarding, and stress-free.
 
-Whether recovering from an injury, managing ongoing physical therapy, or building healthy daily habits, Kriya gives you the tools to succeed at your own pace.
+Whether recovering from an injury, managing ongoing physical therapy, or building healthy daily habits, Pragti gives you the tools to succeed at your own pace.
 
 🌟 WHY CHAMPIONS LOVE IT:
 • Distraction-Free Routine View: Big, clear exercise cards showing exactly what to do without overwhelming menus or clutter.
@@ -71,9 +67,10 @@ Whether recovering from an injury, managing ongoing physical therapy, or buildin
 • Monitor monthly compliance rates and rehabilitation progress.
 • Tailored for physical therapy, occupational therapy, and neuro-rehabilitation protocols.
 
-Bilingual Support: Toggle smoothly between English and Hinglish (Hindi in English) with a single tap.
+🌐 BILINGUAL SUPPORT:
+• Toggle smoothly between English and Hinglish (Hindi in English script) with a single tap.
 
-Download Kriya today and bring consistency, confidence, and joy to daily routines!
+Download Pragti today and bring consistency, confidence, and joy to daily routines!
 ```
 
 ---

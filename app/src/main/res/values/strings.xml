@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Shabaash</string>
-    <string name="notification_channel_name">Shabaash Reminders</string>
+    <string name="app_name">Pragti</string>
+    <string name="notification_channel_name">Pragti Reminders</string>
     <string name="notification_channel_desc">Daily exercise and session alerts</string>
 </resources>

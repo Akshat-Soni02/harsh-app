@@ -79,8 +79,8 @@ fun AppTourDialog(
     val slides = remember {
         listOf(
             TourSlide(
-                titleEn = "Welcome to Shabaash",
-                titleHi = "Shabaash Mein Swagat Hai",
+                titleEn = "Welcome to Pragti",
+                titleHi = "Pragti Mein Swagat Hai",
                 descriptionEn = "A gentle, distraction-free routine and therapy companion created for your champion brother.",
                 descriptionHi = "Yeh app aapke champion bhai ki daily exercise aur physical therapy routine ko aasaan banane ke liye banaya gaya hai.",
                 highlightsEn = listOf(

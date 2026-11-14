@@ -554,7 +554,7 @@ fun ProgressAnalyticsView(
                     Button(
                         onClick = {
                             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
-                            exportLauncher.launch("Shabaash_Backup_$timeStamp.zip")
+                            exportLauncher.launch("Pragti_Backup_$timeStamp.zip")
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
                         shape = RoundedCornerShape(14.dp),

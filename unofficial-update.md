@@ -1,6 +1,6 @@
-# Shabaash — Unofficial Update & Data Preservation Guide
+# Pragti — Unofficial Update & Data Preservation Guide
 
-This guide explains how app updates work for **Shabaash** when distributed unofficially (via APK sideloading outside the Google Play Store), how your brother's and family's data is safely preserved across updates, and the developer rules to follow to prevent accidental data loss.
+This guide explains how app updates work for **Pragti** when distributed unofficially (via APK sideloading outside the Google Play Store), how your brother's and family's data is safely preserved across updates, and the developer rules to follow to prevent accidental data loss.
 
 ---
 
@@ -24,7 +24,7 @@ Your parents **never need to uninstall the app** to apply an update. Android nat
 
 ## 2. How Data is Stored and Retained on Android
 
-Under the hood, Shabaash stores data in two safe locations:
+Under the hood, Pragti stores data in two safe locations:
 
 | Storage Type | What is Stored | Physical Location | Retained on In-Place Update? |
 |---|---|---|---|
@@ -40,7 +40,7 @@ Under the hood, Shabaash stores data in two safe locations:
 
 ## 3. Developer Rules to Prevent Update Failures & Data Loss
 
-As the maintainer of Shabaash, follow these 4 rules before building any new update APK:
+As the maintainer of Pragti, follow these 4 rules before building any new update APK:
 
 ### Rule A: Always Increment `versionCode` in `app/build.gradle.kts`
 Android compares the incoming APK's `versionCode` against the installed one. If the new APK's `versionCode` is lower than or equal to the installed version, Android may reject it with *"App not installed: A newer version is already installed"*.
@@ -98,4 +98,4 @@ Before installing a major update or when transferring to a new phone, use the bu
 
 1. Open **Parent Mode** -> Navigate to **Progress & Reports** (Pragati aur Report) -> Scroll down to **Data Surakshit Karein (Backup) & Phone Badlein**.
 2. Tap **Backup Routines** ("Backup Banayein") to save the `.zip` archive (containing all SQLite data tables, photos, family voice notes, and historical logs).
-3. On the new phone, install Shabaash and tap **Restore Routines** ("Routines Wapas Layein") to import everything back seamlessly.
+3. On the new phone, install Pragti and tap **Restore Routines** ("Routines Wapas Layein") to import everything back seamlessly.
