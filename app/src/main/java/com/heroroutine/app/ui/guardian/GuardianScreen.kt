@@ -1,5 +1,6 @@
 package com.heroroutine.app.ui.guardian
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,21 +19,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -44,6 +52,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -62,6 +71,8 @@ import coil.compose.AsyncImage
 import com.heroroutine.app.data.model.SessionEntity
 import com.heroroutine.app.data.model.TaskEntity
 import com.heroroutine.app.data.model.TaskType
+import com.heroroutine.app.ui.components.AppTourDialog
+import com.heroroutine.app.ui.theme.AppStrings
 import com.heroroutine.app.ui.theme.CreamBackground
 import com.heroroutine.app.ui.theme.MintGreen
 import com.heroroutine.app.ui.theme.SkyBlue
@@ -87,6 +98,29 @@ fun GuardianScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedTaskToDetail by remember { mutableStateOf<TaskEntity?>(null) }
     var taskEditorSessionId by remember { mutableStateOf<Long?>(null) }
+    var languageMenuExpanded by remember { mutableStateOf(false) }
+
+    val isHinglish by viewModel.isHinglish.collectAsState()
+    val hasSeenAppTour by viewModel.hasSeenAppTour.collectAsState()
+    var showTourDialog by remember { mutableStateOf(false) }
+
+    // Automatic first-run tour launch
+    LaunchedEffect(hasSeenAppTour) {
+        if (!hasSeenAppTour) {
+            showTourDialog = true
+        }
+    }
+
+    // Hardware and Gesture Back Button Handling:
+    // Navigates sub-screens first, then returns to Routine tab, then switches back to Champion mode
+    BackHandler {
+        when {
+            selectedTaskToDetail != null -> selectedTaskToDetail = null
+            taskEditorSessionId != null -> taskEditorSessionId = null
+            selectedTab != 0 -> selectedTab = 0
+            else -> viewModel.switchMode(AppMode.CHAMPION)
+        }
+    }
 
     if (selectedTaskToDetail != null) {
         TaskDetailScreen(
@@ -137,7 +171,7 @@ fun GuardianScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Guardian",
+                            text = "Parent",
                             fontWeight = FontWeight.Black,
                             fontSize = 20.sp,
                             color = TextDark,
@@ -150,6 +184,112 @@ fun GuardianScreen(
                             color = TextSecondary,
                             lineHeight = 15.sp
                         )
+                    }
+
+                    // Middle action buttons: Tour guide & Language dropdown switcher
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Interactive App Walkthrough / Tour button
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF7F5F0),
+                            border = BorderStroke(1.dp, WarmCardBorder),
+                            modifier = Modifier.clickable { showTourDialog = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.HelpOutline,
+                                contentDescription = "App Tour",
+                                tint = TextSecondary,
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .size(20.dp)
+                            )
+                        }
+
+                        // Compact Language Switcher with clear dropdown
+                        Box {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isHinglish) WarmOrangeSoft else Color(0xFFF7F5F0),
+                                border = BorderStroke(1.dp, if (isHinglish) WarmOrangeBorder else WarmCardBorder),
+                                modifier = Modifier.clickable { languageMenuExpanded = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Translate,
+                                    contentDescription = "Switch Language",
+                                    tint = if (isHinglish) WarmOrange else TextSecondary,
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .size(20.dp)
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = languageMenuExpanded,
+                                onDismissRequest = { languageMenuExpanded = false },
+                                modifier = Modifier.background(WarmWhite)
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "English",
+                                                fontWeight = if (!isHinglish) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (!isHinglish) WarmOrange else TextDark
+                                            )
+                                            if (!isHinglish) {
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = WarmOrange,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.setHinglish(false)
+                                        languageMenuExpanded = false
+                                    }
+                                )
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Hinglish (Hindi in English)",
+                                                fontWeight = if (isHinglish) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isHinglish) WarmOrange else TextDark
+                                            )
+                                            if (isHinglish) {
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    tint = WarmOrange,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.setHinglish(true)
+                                        languageMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
 
                     Button(
@@ -178,7 +318,7 @@ fun GuardianScreen(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     icon = { Icon(Icons.Default.FitnessCenter, contentDescription = "Routines") },
-                    label = { Text("Routines", fontWeight = FontWeight.Bold) },
+                    label = { Text(AppStrings.tabRoutines(isHinglish), fontWeight = FontWeight.Bold) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = WarmOrange,
                         selectedTextColor = WarmOrange,
@@ -192,7 +332,7 @@ fun GuardianScreen(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Icon(Icons.Default.ShowChart, contentDescription = "Progress") },
-                    label = { Text("Progress & Analytics", fontWeight = FontWeight.Bold) },
+                    label = { Text(AppStrings.tabAnalytics(isHinglish), fontWeight = FontWeight.Bold) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = WarmOrange,
                         selectedTextColor = WarmOrange,
@@ -213,10 +353,21 @@ fun GuardianScreen(
             when (selectedTab) {
                 0 -> GuardianRoutineManager(
                     viewModel = viewModel,
+                    isHinglish = isHinglish,
                     onTaskClicked = { selectedTaskToDetail = it },
                     onAddTask = { sessionId -> taskEditorSessionId = sessionId }
                 )
                 1 -> ProgressAnalyticsView(viewModel = viewModel)
+            }
+
+            if (showTourDialog) {
+                AppTourDialog(
+                    isHinglish = isHinglish,
+                    onDismiss = {
+                        showTourDialog = false
+                        viewModel.setHasSeenAppTour(true)
+                    }
+                )
             }
         }
     }
@@ -225,6 +376,7 @@ fun GuardianScreen(
 @Composable
 fun GuardianRoutineManager(
     viewModel: MainViewModel,
+    isHinglish: Boolean = false,
     onTaskClicked: (TaskEntity) -> Unit,
     onAddTask: (sessionId: Long) -> Unit
 ) {
@@ -251,7 +403,11 @@ fun GuardianRoutineManager(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "New Session")
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("New Session", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(
+                        text = if (isHinglish) "Naya Session" else "New Session",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
                 }
             }
         },
@@ -281,14 +437,17 @@ fun GuardianRoutineManager(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "No Routine Sessions Yet",
+                                text = if (isHinglish) "Abhi Koi Routine Session Nahi Hai" else "No Routine Sessions Yet",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black,
                                 color = TextDark
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Create morning or evening sessions to organize exercises for your champion.",
+                                text = if (isHinglish)
+                                    "Apne champion bhai ke liye subah ya shaam ke sessions banayein aur kasrat set karein."
+                                else
+                                    "Create morning or evening sessions to organize exercises for your champion.",
                                 fontSize = 14.sp,
                                 color = TextSecondary,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -336,17 +495,17 @@ fun GuardianRoutineManager(
                                                 modifier = Modifier.padding(top = 2.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Schedule,
+                                                    imageVector = if (session.alarmEnabled) Icons.Default.NotificationsActive else Icons.Default.Schedule,
                                                     contentDescription = null,
-                                                    tint = TextSecondary,
-                                                    modifier = Modifier.size(12.dp)
+                                                    tint = if (session.alarmEnabled) WarmOrange else TextSecondary,
+                                                    modifier = Modifier.size(13.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(4.dp))
                                                 Text(
-                                                    text = session.targetTime!!,
+                                                    text = session.targetTime!! + if (session.alarmEnabled) " (Alarm On)" else "",
                                                     fontSize = 12.sp,
-                                                    color = TextSecondary,
-                                                    fontWeight = FontWeight.Medium
+                                                    color = if (session.alarmEnabled) WarmOrange else TextSecondary,
+                                                    fontWeight = if (session.alarmEnabled) FontWeight.Bold else FontWeight.Medium
                                                 )
                                             }
                                         }
@@ -371,7 +530,7 @@ fun GuardianRoutineManager(
                             // Tasks List
                             if (tasks.isEmpty()) {
                                 Text(
-                                    text = "No exercises added to this session yet.",
+                                    text = if (isHinglish) "Is session mein abhi koi task nahi hai." else "No exercises added to this session yet.",
                                     fontSize = 14.sp,
                                     color = TextMuted,
                                     modifier = Modifier.padding(vertical = 10.dp)
@@ -410,7 +569,12 @@ fun GuardianRoutineManager(
                                 ) {
                                     Icon(Icons.Default.Add, contentDescription = "Add", tint = WarmOrange, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Add Task", color = WarmOrange, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Text(
+                                        text = if (isHinglish) "Kasrat / Task Jodein" else "Add Task",
+                                        color = WarmOrange,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
                                 }
                             }
                         }
@@ -424,11 +588,18 @@ fun GuardianRoutineManager(
         SessionEditorDialog(
             initialSession = sessionToEdit,
             onDismiss = { showSessionDialog = false },
-            onSave = { title, emoji, time ->
+            onSave = { title, emoji, time, alarmEnabled ->
                 if (sessionToEdit == null) {
-                    viewModel.createSession(title, emoji, time)
+                    viewModel.createSession(title, emoji, time, alarmEnabled)
                 } else {
-                    viewModel.updateSession(sessionToEdit!!.copy(title = title, iconEmoji = emoji, targetTime = time))
+                    viewModel.updateSession(
+                        sessionToEdit!!.copy(
+                            title = title,
+                            iconEmoji = emoji,
+                            targetTime = time,
+                            alarmEnabled = alarmEnabled
+                        )
+                    )
                 }
                 showSessionDialog = false
             }

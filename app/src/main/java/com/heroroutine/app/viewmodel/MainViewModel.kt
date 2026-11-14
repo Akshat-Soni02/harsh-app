@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.heroroutine.app.HeroRoutineApp
+import com.heroroutine.app.alarm.AlarmScheduler
 import com.heroroutine.app.data.backup.BackupManager
 import com.heroroutine.app.data.backup.BackupStats
 import com.heroroutine.app.data.model.ProgressPhotoEntity
@@ -27,7 +28,7 @@ import java.time.LocalDate
 
 enum class AppMode {
     CHAMPION,
-    GUARDIAN
+    PARENT
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -51,9 +52,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val pendingUndoTasks: StateFlow<Map<Long, Long>> = _pendingUndoTasks.asStateFlow()
 
     val isHinglish: StateFlow<Boolean> = prefsManager.isHinglish
+    val hasSeenAppTour: StateFlow<Boolean> = prefsManager.hasSeenAppTour
 
     fun setHinglish(enabled: Boolean) {
         prefsManager.setHinglish(enabled)
+    }
+
+    fun setHasSeenAppTour(seen: Boolean) {
+        prefsManager.setHasSeenAppTour(seen)
     }
 
     val sessions: StateFlow<List<SessionEntity>> = repository.allSessions
@@ -118,27 +124,87 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _showCelebration.value = false
     }
 
-    // Guardian Actions
-    fun createSession(title: String, iconEmoji: String, targetTime: String?) {
+    private fun parseTimeToHourMinute(timeStr: String?): Pair<Int, Int>? {
+        if (timeStr.isNullOrBlank()) return null
+        return try {
+            val trimmed = timeStr.trim().uppercase()
+            if (trimmed.contains("AM") || trimmed.contains("PM")) {
+                val isPm = trimmed.contains("PM")
+                val cleanTime = trimmed.replace("AM", "").replace("PM", "").trim()
+                val parts = cleanTime.split(":")
+                var hour = parts[0].trim().toInt()
+                val min = if (parts.size > 1) parts[1].trim().toInt() else 0
+                if (isPm && hour < 12) hour += 12
+                if (!isPm && hour == 12) hour = 0
+                Pair(hour, min)
+            } else if (trimmed.contains(":")) {
+                val parts = trimmed.split(":")
+                val hour = parts[0].trim().toInt()
+                val min = if (parts.size > 1) parts[1].trim().toInt() else 0
+                Pair(hour, min)
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Parent Actions
+    fun createSession(title: String, iconEmoji: String, targetTime: String?, alarmEnabled: Boolean = false) {
         viewModelScope.launch {
             val count = sessions.value.size
-            repository.insertSession(
+            val newId = repository.insertSession(
                 SessionEntity(
                     title = title,
                     iconEmoji = iconEmoji,
                     orderIndex = count,
-                    targetTime = targetTime
+                    targetTime = targetTime,
+                    alarmEnabled = alarmEnabled
                 )
             )
+            if (alarmEnabled && !targetTime.isNullOrBlank()) {
+                val hm = parseTimeToHourMinute(targetTime)
+                if (hm != null) {
+                    AlarmScheduler.scheduleDailyAlarm(
+                        context = getApplication(),
+                        requestCode = newId.toInt(),
+                        hour = hm.first,
+                        minute = hm.second,
+                        title = "Routine: $title",
+                        message = "Time for your $title exercises! 🌟"
+                    )
+                }
+            }
         }
     }
 
     fun updateSession(session: SessionEntity) {
-        viewModelScope.launch { repository.updateSession(session) }
+        viewModelScope.launch {
+            repository.updateSession(session)
+            if (session.alarmEnabled && !session.targetTime.isNullOrBlank()) {
+                val hm = parseTimeToHourMinute(session.targetTime)
+                if (hm != null) {
+                    AlarmScheduler.scheduleDailyAlarm(
+                        context = getApplication(),
+                        requestCode = session.id.toInt(),
+                        hour = hm.first,
+                        minute = hm.second,
+                        title = "Routine: ${session.title}",
+                        message = "Time for your ${session.title} exercises! 🌟"
+                    )
+                } else {
+                    AlarmScheduler.cancelAlarm(getApplication(), session.id.toInt())
+                }
+            } else {
+                AlarmScheduler.cancelAlarm(getApplication(), session.id.toInt())
+            }
+        }
     }
 
     fun deleteSession(session: SessionEntity) {
-        viewModelScope.launch { repository.deleteSession(session) }
+        viewModelScope.launch {
+            AlarmScheduler.cancelAlarm(getApplication(), session.id.toInt())
+            repository.deleteSession(session)
+        }
     }
 
     fun createTask(

@@ -23,6 +23,8 @@ object AlarmScheduler {
             putExtra("EXTRA_TITLE", title)
             putExtra("EXTRA_MESSAGE", message)
             putExtra("EXTRA_ID", requestCode)
+            putExtra("EXTRA_HOUR", hour)
+            putExtra("EXTRA_MINUTE", minute)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

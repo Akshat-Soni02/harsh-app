@@ -24,9 +24,15 @@ class HeroRoutineApp : Application() {
             val name = getString(R.string.notification_channel_name)
             val descriptionText = getString(R.string.notification_channel_desc)
             val importance = NotificationManager.IMPORTANCE_HIGH
+            val alarmSound = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .build()
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
                 enableVibration(true)
+                setSound(alarmSound, audioAttributes)
             }
             val notificationManager: NotificationManager =
                 getSystemService(NotificationManager::class.java)

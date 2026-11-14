@@ -10,5 +10,6 @@ data class SessionEntity(
     val title: String,
     val iconEmoji: String = "⚡",
     val orderIndex: Int = 0,
-    val targetTime: String? = null // e.g. "09:00"
+    val targetTime: String? = null, // e.g. "09:00"
+    val alarmEnabled: Boolean = false
 )

@@ -1,5 +1,6 @@
 package com.heroroutine.app.ui.champion
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -61,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.heroroutine.app.data.model.TaskEntity
 import com.heroroutine.app.ui.components.CelebrationOverlay
+import com.heroroutine.app.ui.theme.AppStrings
 import com.heroroutine.app.ui.theme.CreamBackground
 import com.heroroutine.app.ui.theme.MintGreen
 import com.heroroutine.app.ui.theme.MintGreenDark
@@ -86,10 +88,16 @@ fun ChampionScreen(
     val todayLogs by viewModel.todayLogs.collectAsState()
     val streakInfo by viewModel.streakInfo.collectAsState()
     val showCelebration by viewModel.showCelebration.collectAsState()
+    val isHinglish by viewModel.isHinglish.collectAsState()
 
-    var showGuardianModal by remember { mutableStateOf(false) }
+    var showParentModal by remember { mutableStateOf(false) }
     var undoTask by remember { mutableStateOf<TaskEntity?>(null) }
     val undoProgress = remember { Animatable(1f) }
+
+    // Intercept back button when mode switch modal is shown
+    BackHandler(enabled = showParentModal) {
+        showParentModal = false
+    }
 
     val completedTaskIds = todayLogs.filter { it.completed }.map { it.taskId }.toSet()
 
@@ -141,17 +149,17 @@ fun ChampionScreen(
                     trackColor = Color(0xFFEFE6DA)
                 )
 
-                // Right: Settings gear icon to switch to Guardian mode
+                // Right: Settings gear icon to switch to Parent mode
                 Surface(
                     shape = CircleShape,
                     color = WarmWhite,
                     border = BorderStroke(1.dp, WarmCardBorder),
                     shadowElevation = 1.dp,
-                    modifier = Modifier.clickable { showGuardianModal = true }
+                    modifier = Modifier.clickable { showParentModal = true }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
-                        contentDescription = "Switch to Guardian Mode",
+                        contentDescription = "Switch to Parent Mode",
                         tint = TextSecondary,
                         modifier = Modifier
                             .padding(10.dp)
@@ -188,14 +196,17 @@ fun ChampionScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "No routines set up yet.",
+                                    text = if (isHinglish) "Abhi koi routines nahi hain." else "No routines set up yet.",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextSecondary
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Ask your parent to set up routines in Guardian mode.",
+                                    text = if (isHinglish)
+                                        "Apne mata-pita se kahein ki Parent mode mein routine set karein."
+                                    else
+                                        "Ask your parent to set up routines in Parent mode.",
                                     fontSize = 14.sp,
                                     color = TextMuted,
                                     textAlign = TextAlign.Center
@@ -442,8 +453,8 @@ fun ChampionScreen(
             }
 
             // Mode Switch Modal (single click inside, dismissible outside)
-            if (showGuardianModal) {
-                Dialog(onDismissRequest = { showGuardianModal = false }) {
+            if (showParentModal) {
+                Dialog(onDismissRequest = { showParentModal = false }) {
                     Card(
                         shape = RoundedCornerShape(28.dp),
                         colors = CardDefaults.cardColors(containerColor = WarmWhite),
@@ -455,14 +466,14 @@ fun ChampionScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Guardian Mode",
+                                text = AppStrings.parentModeModalTitle(isHinglish),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Black,
                                 color = TextDark
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Switch to dashboard to manage routines, exercise reps, and view progress.",
+                                text = AppStrings.parentModeModalDesc(isHinglish),
                                 fontSize = 14.sp,
                                 color = TextSecondary,
                                 textAlign = TextAlign.Center
@@ -470,8 +481,8 @@ fun ChampionScreen(
                             Spacer(modifier = Modifier.height(24.dp))
                             Button(
                                 onClick = {
-                                    showGuardianModal = false
-                                    viewModel.switchMode(AppMode.GUARDIAN)
+                                    showParentModal = false
+                                    viewModel.switchMode(AppMode.PARENT)
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
                                 shape = RoundedCornerShape(18.dp),
@@ -480,7 +491,7 @@ fun ChampionScreen(
                                     .height(52.dp)
                             ) {
                                 Text(
-                                    text = "Enter Guardian Mode",
+                                    text = AppStrings.enterParentMode(isHinglish),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.White

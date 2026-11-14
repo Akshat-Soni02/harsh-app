@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
                     Crossfade(targetState = mode, label = "ModeCrossfade") { currentMode ->
                         when (currentMode) {
                             AppMode.CHAMPION -> ChampionScreen(viewModel = viewModel)
-                            AppMode.GUARDIAN -> GuardianScreen(viewModel = viewModel)
+                            AppMode.PARENT -> GuardianScreen(viewModel = viewModel)
                         }
                     }
                 }

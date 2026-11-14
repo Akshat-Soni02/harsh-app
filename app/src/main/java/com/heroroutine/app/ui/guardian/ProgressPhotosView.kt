@@ -3,6 +3,7 @@ package com.heroroutine.app.ui.guardian
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.heroroutine.app.ui.components.PhotoSourceDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -286,6 +287,16 @@ fun AddProgressPhotoDialog(
     var photoPath by remember { mutableStateOf<String?>(null) }
     var notes by remember { mutableStateOf("") }
     var expandedDropdown by remember { mutableStateOf(false) }
+    var showPhotoSourceDialog by remember { mutableStateOf(false) }
+    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
+
+    val takePhotoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && pendingCameraFile != null) {
+            photoPath = pendingCameraFile!!.absolutePath
+        }
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -343,7 +354,7 @@ fun AddProgressPhotoDialog(
                         .height(130.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFFF3F4F6))
-                        .clickable { imagePickerLauncher.launch("image/*") },
+                        .clickable { showPhotoSourceDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
                     if (photoPath != null && File(photoPath!!).exists()) {
@@ -357,9 +368,24 @@ fun AddProgressPhotoDialog(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.AddAPhoto, contentDescription = "Pick Photo", tint = HeroGreen)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("Tap to select photo", color = Color.Gray, fontSize = 14.sp)
+                            Text("Tap to take photo or choose from gallery", color = Color.Gray, fontSize = 13.sp)
                         }
                     }
+                }
+
+                if (showPhotoSourceDialog) {
+                    PhotoSourceDialog(
+                        onDismiss = { showPhotoSourceDialog = false },
+                        onSelectCamera = {
+                            val file = MediaFileManager.createImageFile(context, "PROGRESS")
+                            pendingCameraFile = file
+                            val uri = MediaFileManager.getUriForFile(context, file)
+                            takePhotoLauncher.launch(uri)
+                        },
+                        onSelectGallery = {
+                            imagePickerLauncher.launch("image/*")
+                        }
+                    )
                 }
 
                 OutlinedTextField(

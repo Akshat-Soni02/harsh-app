@@ -3,8 +3,10 @@ package com.heroroutine.app.ui.guardian
 import android.Manifest
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.heroroutine.app.ui.components.PhotoSourceDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -155,6 +157,19 @@ fun TaskEditorScreen(
             isRecording = recorderHelper.isRecording
         } else {
             Toast.makeText(context, "Microphone permission needed", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    BackHandler { onBack() }
+
+    var showPhotoSourceDialog by remember { mutableStateOf(false) }
+    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
+
+    val takePhotoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && pendingCameraFile != null) {
+            photoPath = pendingCameraFile!!.absolutePath
         }
     }
 
@@ -688,7 +703,7 @@ fun TaskEditorScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { imagePickerLauncher.launch("image/*") },
+                                onClick = { showPhotoSourceDialog = true },
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -713,7 +728,7 @@ fun TaskEditorScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(WarmOrangeSoft)
                                 .border(1.dp, WarmOrangeBorder, RoundedCornerShape(16.dp))
-                                .clickable { imagePickerLauncher.launch("image/*") },
+                                .clickable { showPhotoSourceDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -721,9 +736,24 @@ fun TaskEditorScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(text = "Add Photo", color = WarmOrange, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(text = "Tap to choose from gallery", color = TextSecondary, fontSize = 12.sp)
+                                Text(text = "Tap to take photo or choose from gallery", color = TextSecondary, fontSize = 12.sp)
                             }
                         }
+                    }
+
+                    if (showPhotoSourceDialog) {
+                        PhotoSourceDialog(
+                            onDismiss = { showPhotoSourceDialog = false },
+                            onSelectCamera = {
+                                val file = MediaFileManager.createImageFile(context, "TASK_REF")
+                                pendingCameraFile = file
+                                val uri = MediaFileManager.getUriForFile(context, file)
+                                takePhotoLauncher.launch(uri)
+                            },
+                            onSelectGallery = {
+                                imagePickerLauncher.launch("image/*")
+                            }
+                        )
                     }
                 }
             }

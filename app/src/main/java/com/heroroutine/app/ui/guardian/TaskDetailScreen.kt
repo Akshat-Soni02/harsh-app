@@ -1,8 +1,10 @@
 package com.heroroutine.app.ui.guardian
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.heroroutine.app.ui.components.PhotoSourceDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -120,14 +122,27 @@ fun TaskDetailScreen(
     val allLogs by viewModel.allLogs.collectAsState()
     val allPhotos by viewModel.allPhotos.collectAsState()
 
+    BackHandler { onBack() }
+
     val task = allTasks.find { it.id == taskId }
 
     var isEditing by remember { mutableStateOf(false) }
     var showAddPhotoDialog by remember { mutableStateOf(false) }
+    var showPhotoSourceDialog by remember { mutableStateOf(false) }
     var photoNoteInput by remember { mutableStateOf("") }
     var tempPhotoPath by remember { mutableStateOf<String?>(null) }
+    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
 
     val isPlayingVoice = viewModel.audioPlayer.isPathPlaying(task?.audioFilePath ?: "")
+
+    val takePhotoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && pendingCameraFile != null) {
+            tempPhotoPath = pendingCameraFile!!.absolutePath
+            showAddPhotoDialog = true
+        }
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -397,7 +412,7 @@ fun TaskDetailScreen(
                     shape = RoundedCornerShape(12.dp),
                     color = WarmOrangeSoft,
                     border = BorderStroke(1.dp, WarmOrangeBorder),
-                    modifier = Modifier.clickable { photoPickerLauncher.launch("image/*") }
+                    modifier = Modifier.clickable { showPhotoSourceDialog = true }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -571,6 +586,21 @@ fun TaskDetailScreen(
                 }
             }
         }
+    }
+
+    if (showPhotoSourceDialog) {
+        PhotoSourceDialog(
+            onDismiss = { showPhotoSourceDialog = false },
+            onSelectCamera = {
+                val file = MediaFileManager.createImageFile(context, "PROGRESS")
+                pendingCameraFile = file
+                val uri = MediaFileManager.getUriForFile(context, file)
+                takePhotoLauncher.launch(uri)
+            },
+            onSelectGallery = {
+                photoPickerLauncher.launch("image/*")
+            }
+        )
     }
 }
 

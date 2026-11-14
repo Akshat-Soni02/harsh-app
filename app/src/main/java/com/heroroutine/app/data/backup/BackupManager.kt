@@ -54,6 +54,7 @@ class BackupManager(private val context: Context) {
                         put("iconEmoji", s.iconEmoji)
                         put("orderIndex", s.orderIndex)
                         put("targetTime", s.targetTime ?: JSONObject.NULL)
+                        put("alarmEnabled", s.alarmEnabled)
                     }
                     sessionsArray.put(obj)
                 }
@@ -209,7 +210,8 @@ class BackupManager(private val context: Context) {
                         title = obj.getString("title"),
                         iconEmoji = obj.optString("iconEmoji", "⚡"),
                         orderIndex = obj.optInt("orderIndex", 0),
-                        targetTime = if (obj.isNull("targetTime")) null else obj.getString("targetTime")
+                        targetTime = if (obj.isNull("targetTime")) null else obj.getString("targetTime"),
+                        alarmEnabled = obj.optBoolean("alarmEnabled", false)
                     )
                 )
             }

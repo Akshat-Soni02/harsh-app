@@ -39,6 +39,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.heroroutine.app.ui.theme.AppStrings
 import com.heroroutine.app.ui.theme.CreamBackground
 import com.heroroutine.app.ui.theme.MintGreen
 import com.heroroutine.app.ui.theme.MintGreenDark
@@ -96,6 +98,7 @@ fun ProgressAnalyticsView(
     val allLogs by viewModel.allLogs.collectAsState()
     val allTasks by viewModel.allTasks.collectAsState()
     val streakInfo by viewModel.streakInfo.collectAsState()
+    val isHinglish by viewModel.isHinglish.collectAsState()
 
     var monthOffset by remember { mutableIntStateOf(0) }
     val selectedMonth = remember(monthOffset) {
@@ -412,9 +415,9 @@ fun ProgressAnalyticsView(
 
         // Targeted Body Areas Breakdown
         // Evaluates training health: (Completions this month / Total occurrences this month)
-        // Strictly ordered from highest rate to lowest
+        // Clean layout: Body part name, completions/total (e.g. 1/30), and clean percentage (e.g. 3%)
         Text(
-            text = "Targeted Body Areas",
+            text = if (isHinglish) "Body Parts ka Hisaab" else "Targeted Body Areas",
             fontWeight = FontWeight.Black,
             fontSize = 18.sp,
             color = TextDark,
@@ -462,14 +465,14 @@ fun ProgressAnalyticsView(
 
                 if (bodyPartStats.isEmpty()) {
                     Text(
-                        text = "No body parts tracked yet. Tag body parts when editing exercises in the Guardian dashboard.",
+                        text = AppStrings.emptyBodyParts(isHinglish),
                         color = TextMuted,
                         fontSize = 14.sp,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 } else {
                     Text(
-                        text = "Monthly Training Health (Sorted highest to lowest rate):",
+                        text = AppStrings.monthlyTrainingHealth(isHinglish),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextSecondary,
@@ -478,78 +481,39 @@ fun ProgressAnalyticsView(
 
                     bodyPartStats.forEachIndexed { index, stat ->
                         if (index > 0) {
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
 
                         val percent = (stat.completionRate * 100).toInt()
-                        val (statusText, statusBg, statusColor) = when {
-                            percent >= 70 -> Triple("Well Trained", MintGreenSoft, MintGreenDark)
-                            percent >= 40 -> Triple("On Track", WarmOrangeSoft, WarmOrange)
-                            else -> Triple("Needs Attention", Color(0xFFFEE2E2), Color(0xFFDC2626))
-                        }
 
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = WarmOrangeSoft,
-                                        modifier = Modifier.size(30.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.FitnessCenter,
-                                                contentDescription = null,
-                                                tint = WarmOrange,
-                                                modifier = Modifier.size(15.dp)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = stat.partName,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = TextDark
-                                        )
-                                        Text(
-                                            text = "${stat.completionsThisMonth} / ${stat.totalOccurrencesThisMonth} occurrences this month",
-                                            fontSize = 12.sp,
-                                            color = TextSecondary
-                                        )
-                                    }
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = statusBg,
-                                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))
-                                ) {
-                                    Text(
-                                        text = "$statusText ($percent%)",
-                                        color = statusColor,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = stat.partName,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "${stat.completionsThisMonth}/${stat.totalOccurrencesThisMonth}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = TextSecondary
+                                )
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            LinearProgressIndicator(
-                                progress = { stat.completionRate.coerceIn(0f, 1f) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = statusColor,
-                                trackColor = Color(0xFFF1EDE6)
+                            Text(
+                                text = "$percent%",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TextDark
                             )
                         }
                     }
@@ -559,7 +523,7 @@ fun ProgressAnalyticsView(
 
         // Routine Data Backup & Device Transfer Section
         Text(
-            text = "Data Backup & Device Transfer",
+            text = AppStrings.backupHeader(isHinglish),
             fontWeight = FontWeight.Black,
             fontSize = 18.sp,
             color = TextDark,
@@ -577,7 +541,7 @@ fun ProgressAnalyticsView(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Save all exercises, family voice guidance clips, reference photos, and complete chart history into a backup file. When switching to a new phone, tap 'Restore Routines' to pick your backup file and restore everything.",
+                    text = AppStrings.backupDescription(isHinglish),
                     fontSize = 13.sp,
                     color = TextSecondary,
                     lineHeight = 18.sp
@@ -598,7 +562,7 @@ fun ProgressAnalyticsView(
                     ) {
                         Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Backup Routines", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(AppStrings.backupButton(isHinglish), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
 
                     OutlinedButton(
@@ -610,7 +574,7 @@ fun ProgressAnalyticsView(
                     ) {
                         Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restore Routines", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(AppStrings.restoreButton(isHinglish), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
