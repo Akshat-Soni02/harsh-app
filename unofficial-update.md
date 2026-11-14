@@ -28,9 +28,9 @@ Under the hood, Shabaash stores data in two safe locations:
 
 | Storage Type | What is Stored | Physical Location | Retained on In-Place Update? |
 |---|---|---|---|
-| **Room SQLite Database** | Sessions, Tasks, Reps/Sets, Body Parts, Daily Completion Logs, Streaks | `/data/data/com.heroroutine.app/databases/heroroutine_database` | ✅ **Yes (Untouched)** |
+| **Room SQLite Database** | Sessions, Tasks, Reps/Sets, Body Parts, Daily Completion Logs, Streaks, Daily Alarm Settings | `/data/data/com.heroroutine.app/databases/heroroutine_database` | ✅ **Yes (Untouched)** |
 | **Internal App Sandbox Files** | Recorded Voice Guides (`VOICE_*.m4a`), Reference Photos (`IMG_*.jpg`), Progress Photos (`PROGRESS_*.jpg`) | `/data/data/com.heroroutine.app/files/` (`context.filesDir`) | ✅ **Yes (Untouched)** |
-| **App Preferences** | Active mode (Champion / Guardian), notification channel settings | `/data/data/com.heroroutine.app/shared_prefs/` | ✅ **Yes (Untouched)** |
+| **App Preferences** | Active mode (Champion / Parent), language (English / Hinglish), tour status | `/data/data/com.heroroutine.app/shared_prefs/` | ✅ **Yes (Untouched)** |
 
 > [!IMPORTANT]
 > **The One Rule Parents Must Follow: NEVER UNINSTALL FIRST!**  
@@ -73,29 +73,29 @@ Android strictly enforces **Signature Verification**:
 
 ### Rule C: Room Database Migrations (Schema Changes)
 In `AppDatabase.kt`:
-```kotlin
-// DANGER: Only safe during early development
-.fallbackToDestructiveMigration()
-```
-- **If you change UI, layouts, colors, or business logic**: The database schema does not change, so `fallbackToDestructiveMigration()` is never triggered and data remains completely safe.
-- **If you change database tables in the future** (e.g. adding a new column to `TaskEntity` or `SessionEntity`):
-  1. Bump `version = 4` in `@Database(...)`.
-  2. Write a non-destructive Room `Migration`:
-     ```kotlin
-     val MIGRATION_3_4 = object : Migration(3, 4) {
-         override fun migrate(db: SupportSQLiteDatabase) {
-             db.execSQL("ALTER TABLE tasks ADD COLUMN restTimeSeconds INTEGER NOT NULL DEFAULT 0")
-         }
-     }
-     ```
-  3. Add `.addMigrations(MIGRATION_3_4)` to the database builder.  
-     This ensures all existing tasks and logs are preserved when the database updates!
+- **If you change UI, layouts, colors, or business logic**: The database schema does not change, so no migration is needed and data remains completely safe.
+- **When schema changes** (e.g. adding columns):
+  Room version is currently `4` with non-destructive migration `MIGRATION_3_4`:
+  ```kotlin
+  val MIGRATION_3_4 = object : Migration(3, 4) {
+      override fun migrate(db: SupportSQLiteDatabase) {
+          db.execSQL("ALTER TABLE sessions ADD COLUMN alarmEnabled INTEGER NOT NULL DEFAULT 0")
+      }
+  }
+  ```
+  Registered via:
+  ```kotlin
+  Room.databaseBuilder(...)
+      .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+      .build()
+  ```
+  This ensures zero data loss when existing user databases are upgraded.
 
 ---
 
 ### Rule D: Take a Backup Before Major Updates
 Before installing a major update or when transferring to a new phone, use the built-in **Backup & Restore** feature:
 
-1. Open **Guardian Mode** -> Tap **Backup Routines**.
-2. Save the backup `.zip` file (containing all database tables, photos, voice recordings, and completion history) to device storage, Google Drive, or send it to family chat.
-3. On a new phone or after any fresh install, tap **Restore Routines**, choose the backup file, and all routines and charts are instantly restored!
+1. Open **Parent Mode** -> Navigate to **Progress & Reports** (Pragati aur Report) -> Scroll down to **Data Surakshit Karein (Backup) & Phone Badlein**.
+2. Tap **Backup Routines** ("Backup Banayein") to save the `.zip` archive (containing all SQLite data tables, photos, family voice notes, and historical logs).
+3. On the new phone, install Shabaash and tap **Restore Routines** ("Routines Wapas Layein") to import everything back seamlessly.
