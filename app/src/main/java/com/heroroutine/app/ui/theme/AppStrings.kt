@@ -28,12 +28,12 @@ object AppStrings {
         else "No body parts tracked yet. Tag body parts when editing exercises."
 
     fun backupHeader(isHinglish: Boolean) =
-        if (isHinglish) "Data Surakshit Karein (Backup) & Phone Badlein"
-        else "Data Backup & Device Transfer"
+        if (isHinglish) "Data Surakshit Karein (Backup)"
+        else "Data Backup"
 
     fun backupDescription(isHinglish: Boolean) =
-        if (isHinglish) "Sabhi kasratein, aawaz ke sandesh (voice guides), reference photos aur puraani report ek zip file mein save karein. Naya phone lene par 'Restore Routines' dabakar sab turant wapas layein."
-        else "Save all exercises, family voice guidance clips, reference photos, and complete chart history into a backup file. When switching to a new phone, tap 'Restore Routines' to restore everything."
+        if (isHinglish) "Isko roz karne ki zaroorat nahi hai — aapka saara data is phone mein apne aap save rehta hai. Iska istemal sirf tab karein jab naya phone lena ho ya mahine mein ek baar safety ke liye file save karni ho. Naya phone lene par 'Routines Wapas Layein' dabakar sab turant wapas aa jayega."
+        else "You do not need to do this daily — all exercises and progress are always saved automatically on this device. Use this only when changing phones or occasionally for extra peace of mind. On a new phone, tap 'Restore Routines' to bring everything back."
 
     fun backupButton(isHinglish: Boolean) =
         if (isHinglish) "Backup Banayein" else "Backup Routines"

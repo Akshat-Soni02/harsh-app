@@ -445,7 +445,7 @@ fun GuardianRoutineManager(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = if (isHinglish)
-                                    "Apne champion bhai ke liye subah ya shaam ke sessions banayein aur kasrat set karein."
+                                    "Apne champion ke liye subah ya shaam ke sessions banayein aur kasrat set karein."
                                 else
                                     "Create morning or evening sessions to organize exercises for your champion.",
                                 fontSize = 14.sp,

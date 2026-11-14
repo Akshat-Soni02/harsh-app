@@ -81,27 +81,27 @@ fun AppTourDialog(
             TourSlide(
                 titleEn = "Welcome to Pragti",
                 titleHi = "Pragti Mein Swagat Hai",
-                descriptionEn = "A gentle, distraction-free routine and therapy companion created for your champion brother.",
-                descriptionHi = "Yeh app aapke champion bhai ki daily exercise aur physical therapy routine ko aasaan banane ke liye banaya gaya hai.",
+                descriptionEn = "A gentle, distraction-free routine and therapy companion created for your champion.",
+                descriptionHi = "Yeh app aapke champion ki daily exercise aur physical therapy routine ko aasaan banane ke liye banaya gaya hai.",
                 highlightsEn = listOf(
                     "Ultra-clean, high-contrast visual design",
                     "Distraction-free cards with zero clutter",
-                    "Positive reinforcement and celebration"
+                    "Celebration once daily routine is done"
                 ),
                 highlightsHi = listOf(
-                    "Saaf-suthra design jise bhai asani se samajh sakein",
+                    "Saaf-suthra design jise champion aasaani se samajh sakein",
                     "Bina kisi uljhan ke seedhe task cards",
-                    "Shabaashi aur celebratory utsaah"
+                    "Din ki kasrat poori hone par shandar celebration"
                 ),
                 icon = Icons.Default.Favorite,
                 iconBg = WarmOrangeSoft,
                 iconTint = WarmOrange
             ),
             TourSlide(
-                titleEn = "Champion Mode (For Brother)",
-                titleHi = "Champion Mode (Bhai Ke Liye)",
-                descriptionEn = "Designed specifically so your brother can comfortably follow his exercises independently.",
-                descriptionHi = "Bhai ke liye bilkul simple screen jahan wo aasaani se apni kasrat dekh kar poora kar sakein.",
+                titleEn = "Champion Mode",
+                titleHi = "Champion Mode",
+                descriptionEn = "Designed specifically so your champion can comfortably follow exercises independently.",
+                descriptionHi = "Champion ke liye bilkul simple screen jahan wo aasaani se apni kasrat dekh kar poora kar sakein.",
                 highlightsEn = listOf(
                     "Large, bold numbers for target sets & reps",
                     "One-tap audio button to hear family voice guidance",
@@ -119,8 +119,8 @@ fun AppTourDialog(
                 iconTint = MintGreenDark
             ),
             TourSlide(
-                titleEn = "Parent Mode (For Parents)",
-                titleHi = "Parent Mode (Mata-Pita Ke Liye)",
+                titleEn = "Parent Mode",
+                titleHi = "Parent Mode",
                 descriptionEn = "Access anytime from the gear icon in Champion mode to manage exercises and view progress.",
                 descriptionHi = "Champion screen par upar gear icon tap karke Parent Mode kholein aur sabhi routines sambhalein.",
                 highlightsEn = listOf(
@@ -138,19 +138,19 @@ fun AppTourDialog(
                 iconTint = SkyBlue
             ),
             TourSlide(
-                titleEn = "Record Voice & Snap Photos",
+                titleEn = "Record Voice & Add Photos",
                 titleHi = "Apni Aawaz & Photos Jodein",
-                descriptionEn = "Hearing a familiar, loving family voice gives immense confidence and calmness.",
-                descriptionHi = "Ghar ke sadasya ki aawaz sunkar bhai ko hausla milta hai aur wo aaram se kasrat karte hain.",
+                descriptionEn = "Hearing a familiar family voice gives confidence and guides what exercise to do — especially helpful if vision is weak.",
+                descriptionHi = "Ghar ki aawaz se hausla milta hai aur pata chalta hai kya karna hai — kamzor nazar walo ke liye bhi aasan.",
                 highlightsEn = listOf(
-                    "Record clear audio cues directly with the built-in mic",
-                    "Snap reference photos directly using camera or gallery",
-                    "Visual cues help your brother recognize each posture"
+                    "Audio cues guide what to do & help champions with low vision listen to exercises",
+                    "Voice example: 'Haathon ko seedha karne ki exercise: 20 baar, 3 set'",
+                    "Snap photos from camera or gallery for proper posture guidance"
                 ),
                 highlightsHi = listOf(
-                    "Built-in mic se aasaani se apni aawaz record karein",
-                    "Camera se turant photo kheenche ya gallery se chunein",
-                    "Photo dekhkar bhai samajh jate hain ki kya karna hai"
+                    "Aawaz se samajh aata hai kya karna hai aur kamzor vision wale bhi sunkar kasrat kar sakte hain",
+                    "Audio example: 'Haathon ko seedha karne ki exercise: 20 baar, 3 set'",
+                    "Camera ya gallery se photo lagayein taaki sahi posture samajh aaye"
                 ),
                 icon = Icons.Default.CameraAlt,
                 iconBg = WarmOrangeSoft,
@@ -176,23 +176,19 @@ fun AppTourDialog(
                 iconTint = MintGreenDark
             ),
             TourSlide(
-                titleEn = "Progress, Health & Safe Backup",
-                titleHi = "Pragati, Health & Safe Backup",
-                descriptionEn = "Track long-term mobility improvements and keep all routine data safely preserved.",
-                descriptionHi = "Long-term sudhar ka chart dekhein aur backup lekar sabhi data ko surakshit rakhein.",
+                titleEn = "Progress & Health Tracking",
+                titleHi = "Pragati & Health Tracking",
+                descriptionEn = "Track long-term mobility improvements, monthly consistency, and target body area health.",
+                descriptionHi = "Kasrat ki lambi pragati, mahine ki consistency aur body areas ki training health dekhein.",
                 highlightsEn = listOf(
-                    "Inspect Weekly, Monthly, and Yearly repetition progression",
                     "Monthly activity calendar to look back at any past month",
                     "Stress-free monthly body area health percentages",
-                    "One-tap 'Backup Routines' exports everything to a zip file",
-                    "Update the app safely without ever uninstalling"
+                    "Simple data backup option whenever you need to switch phones"
                 ),
                 highlightsHi = listOf(
-                    "Hafte, mahine aur saal ka repetition progression chart",
                     "Puraane mahino ki consistency dekhne ke liye calendar",
                     "Bina kisi tension ke body part ka monthly completion rate",
-                    "'Backup Routines' se audio, photo aur data zip mein save karein",
-                    "Naya update aane par seedhe install karein bina delete kiye"
+                    "Phone badalte waqt surakshit data backup lene ki suvidha"
                 ),
                 icon = Icons.Default.AutoGraph,
                 iconBg = SkyBlueSoft,

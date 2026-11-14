@@ -1,6 +1,6 @@
 # Pragti — Unofficial Update & Data Preservation Guide
 
-This guide explains how app updates work for **Pragti** when distributed unofficially (via APK sideloading outside the Google Play Store), how your brother's and family's data is safely preserved across updates, and the developer rules to follow to prevent accidental data loss.
+This guide explains how app updates work for **Pragti** when distributed unofficially (via APK sideloading outside the Google Play Store), how your champion's and family's data is safely preserved across updates, and the developer rules to follow to prevent accidental data loss.
 
 ---
 

@@ -179,7 +179,7 @@ fun ProgressPhotosView(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Tap the camera button below to log your brother's visual progress!",
+                            text = "Tap the camera button below to log your champion's visual progress!",
                             fontSize = 14.sp,
                             color = Color.Gray
                         )
