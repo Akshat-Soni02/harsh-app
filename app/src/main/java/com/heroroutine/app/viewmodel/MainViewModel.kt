@@ -53,6 +53,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val isHinglish: StateFlow<Boolean> = prefsManager.isHinglish
     val hasSeenAppTour: StateFlow<Boolean> = prefsManager.hasSeenAppTour
+    val isDailyKnowledgeEnabled: StateFlow<Boolean> = prefsManager.isDailyKnowledgeEnabled
+    val customBodyParts: StateFlow<Set<String>> = prefsManager.customBodyParts
 
     fun setHinglish(enabled: Boolean) {
         prefsManager.setHinglish(enabled)
@@ -60,6 +62,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setHasSeenAppTour(seen: Boolean) {
         prefsManager.setHasSeenAppTour(seen)
+    }
+
+    fun setDailyKnowledgeEnabled(enabled: Boolean) {
+        prefsManager.setDailyKnowledgeEnabled(enabled)
+    }
+
+    fun addCustomBodyPart(name: String) {
+        prefsManager.addCustomBodyPart(name)
+    }
+
+    fun removeCustomBodyPart(name: String) {
+        prefsManager.removeCustomBodyPart(name)
+        viewModelScope.launch {
+            val targetTrimmed = name.trim().lowercase()
+            allTasks.value.forEach { task ->
+                val currentParts = task.bodyParts.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                val filtered = currentParts.filter { !it.equals(targetTrimmed, ignoreCase = true) }
+                if (filtered.size != currentParts.size) {
+                    repository.updateTask(task.copy(bodyParts = filtered.joinToString(",")))
+                }
+            }
+        }
     }
 
     val sessions: StateFlow<List<SessionEntity>> = repository.allSessions
@@ -217,7 +241,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         audioFilePath: String?,
         referencePhotoPath: String?,
         notes: String?,
-        bodyParts: String
+        bodyParts: String,
+        isDraft: Boolean = false
     ) {
         viewModelScope.launch {
             val order = allTasks.value.count { it.sessionId == sessionId }
@@ -233,7 +258,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     referencePhotoPath = referencePhotoPath,
                     orderIndex = order,
                     notes = notes,
-                    bodyParts = bodyParts
+                    bodyParts = bodyParts,
+                    isDraft = isDraft
                 )
             )
         }

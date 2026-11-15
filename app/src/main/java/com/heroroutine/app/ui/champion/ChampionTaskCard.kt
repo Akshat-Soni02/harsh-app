@@ -131,32 +131,41 @@ fun ChampionTaskCard(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextSecondary,
-                    modifier = Modifier.weight(1f)
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
 
                 // Reps / Sets Display
                 if (task.taskType == TaskType.EXERCISE) {
                     if (task.targetSets > 0) {
-                        // "x sets [Reps]" format with big sets number matching reps in orange
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        // "x sets of y reps" format
+                        Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 text = "${task.targetSets}",
-                                fontSize = 32.sp,
+                                fontSize = 26.sp,
                                 fontWeight = FontWeight.Black,
                                 color = WarmOrange
                             )
                             Text(
-                                text = " sets ",
-                                fontSize = 18.sp,
+                                text = " sets of ",
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextDark,
-                                modifier = Modifier.padding(horizontal = 2.dp)
+                                modifier = Modifier.padding(bottom = 2.dp)
                             )
                             Text(
-                                text = "[${task.targetReps}]",
-                                fontSize = 32.sp,
+                                text = "${task.targetReps}",
+                                fontSize = 26.sp,
                                 fontWeight = FontWeight.Black,
                                 color = WarmOrange
+                            )
+                            Text(
+                                text = " reps",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark,
+                                modifier = Modifier.padding(bottom = 2.dp)
                             )
                         }
                     } else if (task.targetReps > 0) {

@@ -1,8 +1,11 @@
 package com.heroroutine.app.ui.guardian
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,10 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -36,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,12 +62,54 @@ fun SessionEditorDialog(
     onDismiss: () -> Unit,
     onSave: (title: String, emoji: String, targetTime: String?, alarmEnabled: Boolean) -> Unit
 ) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf(initialSession?.title ?: "") }
     var selectedEmoji by remember { mutableStateOf(initialSession?.iconEmoji ?: "☀️") }
     var targetTime by remember { mutableStateOf(initialSession?.targetTime ?: "09:00 AM") }
     var alarmEnabled by remember { mutableStateOf(initialSession?.alarmEnabled ?: false) }
 
     val emojis = listOf("☀️", "🌅", "💪", "🏃", "🧘", "⚡", "🌙", "🎯")
+
+    fun showTimePicker() {
+        val (currHour, currMin) = try {
+            val trimmed = targetTime.trim().uppercase()
+            var h = 9
+            var m = 0
+            if (trimmed.contains("AM") || trimmed.contains("PM")) {
+                val isPm = trimmed.contains("PM")
+                val clean = trimmed.replace("AM", "").replace("PM", "").trim()
+                val parts = clean.split(":")
+                h = parts[0].trim().toInt()
+                m = if (parts.size > 1) parts[1].trim().toInt() else 0
+                if (isPm && h < 12) h += 12
+                if (!isPm && h == 12) h = 0
+            } else if (trimmed.contains(":")) {
+                val parts = trimmed.split(":")
+                h = parts[0].trim().toInt()
+                m = if (parts.size > 1) parts[1].trim().toInt() else 0
+            }
+            Pair(h, m)
+        } catch (_: Exception) {
+            Pair(9, 0)
+        }
+
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                val isPm = hourOfDay >= 12
+                val displayHour = when {
+                    hourOfDay == 0 -> 12
+                    hourOfDay > 12 -> hourOfDay - 12
+                    else -> hourOfDay
+                }
+                val amPm = if (isPm) "PM" else "AM"
+                targetTime = String.format("%02d:%02d %s", displayHour, minute, amPm)
+            },
+            currHour,
+            currMin,
+            false
+        ).show()
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -82,7 +130,14 @@ fun SessionEditorDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("Session Name") },
-                    placeholder = { Text("e.g. Morning Routine, Evening Stretch") },
+                    placeholder = {
+                        Text(
+                            "e.g. Morning Routine, Evening Stretch",
+                            fontSize = 13.sp,
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Normal
+                        )
+                    },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = WarmOrange,
@@ -107,18 +162,44 @@ fun SessionEditorDialog(
                     }
                 }
 
-                OutlinedTextField(
-                    value = targetTime,
-                    onValueChange = { targetTime = it },
-                    label = { Text("Scheduled Time") },
-                    placeholder = { Text("e.g. 08:30 AM") },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = WarmOrange,
-                        unfocusedBorderColor = WarmCardBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // Time picker field
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = targetTime,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Scheduled Time") },
+                        placeholder = {
+                            Text(
+                                "Tap to select time (e.g. 08:30 AM)",
+                                fontSize = 13.sp,
+                                color = Color(0xFF94A3B8),
+                                fontWeight = FontWeight.Normal
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { showTimePicker() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = "Select Time",
+                                    tint = WarmOrange
+                                )
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = WarmOrange,
+                            unfocusedBorderColor = WarmCardBorder
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                showTimePicker()
+                            }
+                    )
+                }
 
                 // Alarm Toggle
                 Surface(
@@ -192,3 +273,4 @@ fun SessionEditorDialog(
         shape = RoundedCornerShape(26.dp)
     )
 }
+

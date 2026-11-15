@@ -70,9 +70,10 @@ fun CelebrationOverlay(
 ) {
     if (!visible) return
 
-    // Auto-dismiss after 4.5 seconds if user doesn't tap
+    // Auto-dismiss after 4.5 seconds if user doesn't tap; play celebration chime
     LaunchedEffect(visible) {
         if (visible) {
+            com.heroroutine.app.media.CelebrationSoundPlayer.playCelebrationChime()
             delay(4500)
             onDismiss()
         }

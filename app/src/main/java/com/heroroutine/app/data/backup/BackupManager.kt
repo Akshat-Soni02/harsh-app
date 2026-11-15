@@ -76,6 +76,7 @@ class BackupManager(private val context: Context) {
                         put("orderIndex", t.orderIndex)
                         put("notes", t.notes ?: JSONObject.NULL)
                         put("bodyParts", t.bodyParts)
+                        put("isDraft", t.isDraft)
                     }
                     tasksArray.put(obj)
                 }
@@ -240,7 +241,8 @@ class BackupManager(private val context: Context) {
                         referencePhotoPath = fullPhotoPath,
                         orderIndex = obj.optInt("orderIndex", 0),
                         notes = if (obj.isNull("notes")) null else obj.getString("notes"),
-                        bodyParts = obj.optString("bodyParts", "")
+                        bodyParts = obj.optString("bodyParts", ""),
+                        isDraft = obj.optBoolean("isDraft", false)
                     )
                 )
             }

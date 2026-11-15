@@ -30,5 +30,6 @@ data class TaskEntity(
     val referencePhotoPath: String? = null,
     val orderIndex: Int = 0,
     val notes: String? = null,
-    val bodyParts: String = "" // Comma separated list of body parts
+    val bodyParts: String = "", // Comma separated list of body parts
+    val isDraft: Boolean = false
 )

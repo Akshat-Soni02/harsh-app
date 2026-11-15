@@ -49,7 +49,7 @@ object AppStrings {
         else "This mode is for parents to set up sessions, record voice instructions, and inspect progress."
 
     fun enterParentMode(isHinglish: Boolean) =
-        if (isHinglish) "Parent Mode mein jayein" else "Enter Parent Mode"
+        if (isHinglish) "Parent Mode Kholein" else "Enter Parent Mode"
 
     fun appTourTitle(isHinglish: Boolean) =
         if (isHinglish) "App Guide / Tour" else "App Tour"

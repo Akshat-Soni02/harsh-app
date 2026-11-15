@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,6 +56,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -80,6 +83,8 @@ import com.heroroutine.app.media.AudioPlayerHelper
 import com.heroroutine.app.media.AudioRecorderHelper
 import com.heroroutine.app.media.MediaFileManager
 import com.heroroutine.app.ui.theme.CreamBackground
+import com.heroroutine.app.ui.theme.MintGreen
+import com.heroroutine.app.ui.theme.MintGreenSoft
 import com.heroroutine.app.ui.theme.SkyBlue
 import com.heroroutine.app.ui.theme.SkyBlueSoft
 import com.heroroutine.app.ui.theme.TextDark
@@ -97,7 +102,12 @@ import java.io.File
 fun TaskEditorScreen(
     sessionId: Long,
     initialTask: TaskEntity? = null,
+    isHinglish: Boolean = false,
+    userBodyParts: Set<String> = emptySet(),
+    onAddUserBodyPart: (String) -> Unit = {},
+    onRemoveUserBodyPart: (String) -> Unit = {},
     onBack: () -> Unit,
+    onDiscardDraft: (() -> Unit)? = null,
     onSave: (
         title: String,
         type: TaskType,
@@ -107,7 +117,8 @@ fun TaskEditorScreen(
         audioPath: String?,
         photoPath: String?,
         notes: String?,
-        bodyParts: String
+        bodyParts: String,
+        isDraft: Boolean
     ) -> Unit
 ) {
     val context = LocalContext.current
@@ -137,10 +148,16 @@ fun TaskEditorScreen(
             }
         }
     }
-    var customPartInput by remember { mutableStateOf("") }
+
+    var showAddBodyPartDialog by remember { mutableStateOf(false) }
+    var newBodyPartInput by remember { mutableStateOf("") }
+    var bodyPartPendingDelete by remember { mutableStateOf<String?>(null) }
 
     var isRecording by remember { mutableStateOf(false) }
     var isPlayingPreview by remember { mutableStateOf(false) }
+
+    // Draft / Exit confirmation state
+    var showExitDialog by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -153,14 +170,12 @@ fun TaskEditorScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val file = recorderHelper.startRecording()
+            recorderHelper.startRecording()
             isRecording = recorderHelper.isRecording
         } else {
             Toast.makeText(context, "Microphone permission needed", Toast.LENGTH_SHORT).show()
         }
     }
-
-    BackHandler { onBack() }
 
     var showPhotoSourceDialog by remember { mutableStateOf(false) }
     var pendingCameraFile by remember { mutableStateOf<File?>(null) }
@@ -184,15 +199,18 @@ fun TaskEditorScreen(
         }
     }
 
-    fun handleSave() {
-        if (title.isBlank()) {
-            Toast.makeText(context, "Please enter an exercise or task name", Toast.LENGTH_SHORT).show()
+    fun handleSave(isDraft: Boolean) {
+        val saveTitle = title.trim().ifEmpty {
+            if (isDraft) "Draft Exercise" else ""
+        }
+        if (!isDraft && saveTitle.isBlank()) {
+            Toast.makeText(context, "Please enter a task name", Toast.LENGTH_SHORT).show()
             return
         }
         val finalSets = if (taskType == TaskType.EXERCISE && isSetsAndRepsMode) targetSets else 0
         val finalBodyParts = selectedParts.joinToString(", ")
         onSave(
-            title.trim(),
+            saveTitle,
             taskType,
             targetReps,
             finalSets,
@@ -200,34 +218,68 @@ fun TaskEditorScreen(
             audioPath,
             photoPath,
             notes.trim().ifEmpty { null },
-            finalBodyParts
+            finalBodyParts,
+            isDraft
         )
     }
+
+    fun handleBackAttempt() {
+        val hasChanges = title.isNotBlank() || audioPath != null || photoPath != null ||
+                notes.isNotBlank() || selectedParts.isNotEmpty() || (initialTask?.isDraft == true)
+        if (hasChanges) {
+            showExitDialog = true
+        } else {
+            onBack()
+        }
+    }
+
+    BackHandler { handleBackAttempt() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (initialTask == null) "Add Exercise" else "Edit Exercise",
+                        text = when {
+                            initialTask?.isDraft == true -> if (isHinglish) "Draft Kasrat" else "Draft Exercise"
+                            initialTask == null -> if (isHinglish) "Nayi Kasrat Jodein" else "Add Exercise"
+                            else -> if (isHinglish) "Kasrat Badalna" else "Edit Exercise"
+                        },
                         fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
+                        fontSize = 19.sp,
                         color = TextDark
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { handleBackAttempt() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextDark)
                     }
                 },
                 actions = {
+                    if (initialTask == null || initialTask.isDraft) {
+                        TextButton(
+                            onClick = { handleSave(isDraft = true) },
+                            modifier = Modifier.padding(end = 4.dp)
+                        ) {
+                            Text(
+                                text = if (isHinglish) "Draft Rakhein" else "Save Draft",
+                                fontWeight = FontWeight.Bold,
+                                color = WarmOrange,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
                     Button(
-                        onClick = { handleSave() },
+                        onClick = { handleSave(isDraft = false) },
                         colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
-                        Text("Save", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(
+                            text = if (isHinglish) "Save" else "Save",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = WarmWhite),
@@ -255,13 +307,25 @@ fun TaskEditorScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = "Basic Information", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextDark)
+                    Text(
+                        text = if (isHinglish) "Kasrat ki Jaankari" else "Basic Information",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = TextDark
+                    )
 
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("Exercise / Task Name") },
-                        placeholder = { Text("e.g. Arm Stretch, Ball Catch") },
+                        label = { Text("Task Name") },
+                        placeholder = {
+                            Text(
+                                "e.g. Arm Stretch, Ball Catch",
+                                fontSize = 13.sp,
+                                color = Color(0xFF94A3B8),
+                                fontWeight = FontWeight.Normal
+                            )
+                        },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = WarmOrange,
@@ -271,7 +335,12 @@ fun TaskEditorScreen(
                     )
 
                     Column {
-                        Text(text = "Task Type", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextSecondary)
+                        Text(
+                            text = if (isHinglish) "Task Type" else "Task Type",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = TextSecondary
+                        )
                         Spacer(modifier = Modifier.height(6.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -298,9 +367,9 @@ fun TaskEditorScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Exercise",
+                                        text = if (isHinglish) "Exercise (Kasrat)" else "Exercise",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
+                                        fontSize = 13.sp,
                                         color = if (taskType == TaskType.EXERCISE) WarmOrange else TextSecondary
                                     )
                                 }
@@ -327,9 +396,9 @@ fun TaskEditorScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "General",
+                                        text = if (isHinglish) "General (Anye Kaam)" else "General",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
+                                        fontSize = 13.sp,
                                         color = if (taskType == TaskType.GENERAL) SkyBlue else TextSecondary
                                     )
                                 }
@@ -351,7 +420,12 @@ fun TaskEditorScreen(
                         modifier = Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Text(text = "Target Configuration", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextDark)
+                        Text(
+                            text = if (isHinglish) "Target / Ginti" else "Target Configuration",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = TextDark
+                        )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -397,8 +471,17 @@ fun TaskEditorScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column {
-                                    Text("Number of Sets", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                                    Text("How many sets in this routine", fontSize = 12.sp, color = TextSecondary)
+                                    Text(
+                                        text = if (isHinglish) "Kitne Sets" else "Number of Sets",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextDark
+                                    )
+                                    Text(
+                                        text = if (isHinglish) "Kul milakar kitne sets karne hain" else "How many sets in this routine",
+                                        fontSize = 12.sp,
+                                        color = TextSecondary
+                                    )
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Surface(
@@ -439,8 +522,17 @@ fun TaskEditorScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column {
-                                    Text("Reps per Set", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                                    Text("Repetitions per each set", fontSize = 12.sp, color = TextSecondary)
+                                    Text(
+                                        text = if (isHinglish) "Har Set mein Reps" else "Reps per Set",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextDark
+                                    )
+                                    Text(
+                                        text = if (isHinglish) "Ek baar mein kitni baar ginti" else "Repetitions per each set",
+                                        fontSize = 12.sp,
+                                        color = TextSecondary
+                                    )
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Surface(
@@ -470,24 +562,6 @@ fun TaskEditorScreen(
                                     }
                                 }
                             }
-
-                            // Format Preview Pill
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = WarmOrangeSoft,
-                                border = BorderStroke(1.dp, WarmOrangeBorder),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Card Preview: ", fontSize = 13.sp, color = TextSecondary)
-                                    Text("$targetSets sets [$targetReps]", fontWeight = FontWeight.Black, color = WarmOrange, fontSize = 16.sp)
-                                    Text(" (Total: ${targetSets * targetReps} reps)", fontSize = 12.sp, color = TextSecondary, modifier = Modifier.padding(start = 4.dp))
-                                }
-                            }
                         } else {
                             // Reps Only Counter
                             Row(
@@ -499,8 +573,17 @@ fun TaskEditorScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column {
-                                    Text("Target Repetitions", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                                    Text("Single set rep count", fontSize = 12.sp, color = TextSecondary)
+                                    Text(
+                                        text = if (isHinglish) "Ginti (Reps)" else "Target Repetitions",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextDark
+                                    )
+                                    Text(
+                                        text = if (isHinglish) "Kitni baar karna hai" else "Single set rep count",
+                                        fontSize = 12.sp,
+                                        color = TextSecondary
+                                    )
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Surface(
@@ -530,23 +613,6 @@ fun TaskEditorScreen(
                                     }
                                 }
                             }
-
-                            // Format Preview Pill
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = WarmOrangeSoft,
-                                border = BorderStroke(1.dp, WarmOrangeBorder),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Card Preview: ", fontSize = 13.sp, color = TextSecondary)
-                                    Text("$targetReps Reps", fontWeight = FontWeight.Black, color = WarmOrange, fontSize = 16.sp)
-                                }
-                            }
                         }
                     }
                 }
@@ -562,14 +628,19 @@ fun TaskEditorScreen(
                         modifier = Modifier.padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(text = "Target Body Parts", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextDark)
-                        Text(text = "Tap premade chips or type custom body part below:", fontSize = 13.sp, color = TextSecondary)
+                        Text(
+                            text = if (isHinglish) "Sharir ke Hisse (Body Parts)" else "Target Body Parts",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = TextDark
+                        )
 
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            // Premade body parts
                             premadeParts.forEach { part ->
                                 val isSelected = selectedParts.contains(part)
                                 Surface(
@@ -597,70 +668,72 @@ fun TaskEditorScreen(
                                     }
                                 }
                             }
-                        }
 
-                        // Custom Part Input
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = customPartInput,
-                                onValueChange = { customPartInput = it },
-                                placeholder = { Text("Add custom part (e.g. Left Knee)") },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = WarmOrange,
-                                    unfocusedBorderColor = WarmCardBorder
-                                )
-                            )
-
-                            Button(
-                                onClick = {
-                                    val trimmed = customPartInput.trim()
-                                    if (trimmed.isNotEmpty() && !selectedParts.contains(trimmed)) {
-                                        selectedParts.add(trimmed)
-                                        customPartInput = ""
+                            // User-created body parts
+                            userBodyParts.forEach { part ->
+                                val isSelected = selectedParts.contains(part)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) WarmOrange else Color(0xFFF8FAFC),
+                                    border = BorderStroke(1.dp, if (isSelected) WarmOrange else WarmCardBorder),
+                                    modifier = Modifier.clickable {
+                                        if (isSelected) selectedParts.remove(part) else selectedParts.add(part)
                                     }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.height(52.dp)
-                            ) {
-                                Text("Add", fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        // Active Selected List
-                        if (selectedParts.isNotEmpty()) {
-                            Text(text = "Selected Parts:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                selectedParts.forEach { part ->
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = WarmOrangeSoft,
-                                        border = BorderStroke(1.dp, WarmOrangeBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(part, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = WarmOrange)
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Remove",
-                                                tint = WarmOrange,
-                                                modifier = Modifier.size(16.dp).clickable { selectedParts.remove(part) }
-                                            )
+                                        if (isSelected) {
+                                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
                                         }
+                                        Text(
+                                            text = part,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) Color.White else TextDark
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove $part",
+                                            tint = if (isSelected) Color.White.copy(alpha = 0.85f) else TextMuted,
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clickable { bodyPartPendingDelete = part }
+                                        )
                                     }
+                                }
+                            }
+
+                            // Distinct "+ Add Body Part" chip
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MintGreenSoft,
+                                border = BorderStroke(1.2.dp, MintGreen),
+                                modifier = Modifier.clickable {
+                                    newBodyPartInput = ""
+                                    showAddBodyPartDialog = true
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Add Body Part",
+                                        tint = MintGreen,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isHinglish) "+ Naya Hissa Jodein" else "+ Add Body Part",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MintGreen
+                                    )
                                 }
                             }
                         }
@@ -679,8 +752,22 @@ fun TaskEditorScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(text = "Reference Photo (Visual Cue)", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextDark)
-                    Text(text = "A photo showing how to do the exercise helps recognize tasks visually.", fontSize = 13.sp, color = TextSecondary)
+                    Text(
+                        text = if (isHinglish) "Kasrat ki Photo (Visual Cue)" else "Reference Photo (Visual Cue)",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = TextDark
+                    )
+                    Text(
+                        text = if (isHinglish) {
+                            "Kasrat karte waqt ki photo lagane se champion ko dekh kar samajhna asaan hota hai ki kaise karna hai."
+                        } else {
+                            "A photo showing how to do the exercise helps champion recognize and understand tasks visually."
+                        },
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                        lineHeight = 18.sp
+                    )
 
                     if (!photoPath.isNullOrEmpty() && File(photoPath!!).exists()) {
                         Box(
@@ -709,7 +796,7 @@ fun TaskEditorScreen(
                             ) {
                                 Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Change Photo")
+                                Text(if (isHinglish) "Photo Badlein" else "Change Photo")
                             }
 
                             Button(
@@ -724,7 +811,7 @@ fun TaskEditorScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(140.dp)
+                                .height(130.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(WarmOrangeSoft)
                                 .border(1.dp, WarmOrangeBorder, RoundedCornerShape(16.dp))
@@ -732,11 +819,20 @@ fun TaskEditorScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.CameraAlt, contentDescription = "Add Photo", tint = WarmOrange, modifier = Modifier.size(36.dp))
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(text = "Add Photo", color = WarmOrange, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Icon(Icons.Default.CameraAlt, contentDescription = "Add Photo", tint = WarmOrange, modifier = Modifier.size(34.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = if (isHinglish) "Photo Jodein" else "Add Photo",
+                                    color = WarmOrange,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(text = "Tap to take photo or choose from gallery", color = TextSecondary, fontSize = 12.sp)
+                                Text(
+                                    text = if (isHinglish) "Camera ya gallery se photo chunein" else "Tap to take photo or choose from gallery",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
                     }
@@ -769,8 +865,22 @@ fun TaskEditorScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(text = "Family Voice Guidance", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextDark)
-                    Text(text = "Record encouragement in a familiar voice. Tapping 'Listen' plays this instruction.", fontSize = 13.sp, color = TextSecondary)
+                    Text(
+                        text = if (isHinglish) "Aapki Apni Aawaz (Voice Guidance)" else "Family Voice Guidance",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = TextDark
+                    )
+                    Text(
+                        text = if (isHinglish) {
+                            "Apni aawaz mein instructions record karein. Isse champion ko hausla milta hai aur kamzor nazar (low vision) hone par bhi aawaz sunkar kasrat asaani se samajh aati hai. Jaise: 'Haatho ko seedha karne ki exercise 20 baar, 3 set'."
+                        } else {
+                            "Record encouragement in a familiar voice. Helps champion stay motivated and listen to instructions clearly, especially helpful for low vision."
+                        },
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                        lineHeight = 18.sp
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -786,7 +896,14 @@ fun TaskEditorScreen(
                             ) {
                                 Icon(Icons.Default.Mic, contentDescription = "Record")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (audioPath != null) "Record New Voice" else "Record Voice", fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = if (audioPath != null) {
+                                        if (isHinglish) "Dobara Record Karein" else "Record New Voice"
+                                    } else {
+                                        if (isHinglish) "Aawaz Record Karein" else "Record Voice"
+                                    },
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         } else {
                             Button(
@@ -801,7 +918,7 @@ fun TaskEditorScreen(
                             ) {
                                 Icon(Icons.Default.Stop, contentDescription = "Stop")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Stop Recording", fontWeight = FontWeight.Bold)
+                                Text(if (isHinglish) "Recording Rokein" else "Stop Recording", fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -847,12 +964,24 @@ fun TaskEditorScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(text = "Caregiver Notes & Tips", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextDark)
+                    Text(
+                        text = if (isHinglish) "Mata-Pita ke Notes & Salah" else "Caregiver Notes & Tips",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = TextDark
+                    )
                     OutlinedTextField(
                         value = notes,
                         onValueChange = { notes = it },
-                        label = { Text("Notes / Physiotherapist instructions") },
-                        placeholder = { Text("e.g. Ensure elbow is supported on cushion") },
+                        label = { Text(if (isHinglish) "Notes / Physiotherapist ki salah" else "Notes / Physiotherapist instructions") },
+                        placeholder = {
+                            Text(
+                                "e.g. Ensure elbow is supported on cushion",
+                                fontSize = 13.sp,
+                                color = Color(0xFF94A3B8),
+                                fontWeight = FontWeight.Normal
+                            )
+                        },
                         minLines = 3,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -863,24 +992,220 @@ fun TaskEditorScreen(
                 }
             }
 
-            // Big Save Button at the Bottom
-            Button(
-                onClick = { handleSave() },
-                colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
+            // Big Save Buttons at Bottom
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = if (initialTask == null) "Save Exercise" else "Update Exercise",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
+                if (initialTask == null || initialTask.isDraft) {
+                    OutlinedButton(
+                        onClick = { handleSave(isDraft = true) },
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.5.dp, WarmOrange),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp)
+                    ) {
+                        Text(
+                            text = if (isHinglish) "Draft Save Karein" else "Save as Draft",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = WarmOrange
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = { handleSave(isDraft = false) },
+                    colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                ) {
+                    Text(
+                        text = when {
+                            initialTask?.isDraft == true -> if (isHinglish) "Kasrat Publish Karein" else "Publish Exercise"
+                            initialTask == null -> if (isHinglish) "Kasrat Save Karein" else "Save Exercise"
+                            else -> if (isHinglish) "Update Karein" else "Update Exercise"
+                        },
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    // Modal: Add New Body Part (strictly NO word "custom")
+    if (showAddBodyPartDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddBodyPartDialog = false },
+            title = {
+                Text(
+                    text = if (isHinglish) "Naya Hissa Jodein" else "Add New Body Part",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = TextDark
+                )
+            },
+            text = {
+                OutlinedTextField(
+                    value = newBodyPartInput,
+                    onValueChange = { newBodyPartInput = it },
+                    label = { Text("Body Part Name") },
+                    placeholder = {
+                        Text(
+                            "e.g. Left Knee, Ankles",
+                            fontSize = 13.sp,
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Normal
+                        )
+                    },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = WarmOrange,
+                        unfocusedBorderColor = WarmCardBorder
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val trimmed = newBodyPartInput.trim()
+                        if (trimmed.isNotEmpty()) {
+                            onAddUserBodyPart(trimmed)
+                            if (!selectedParts.contains(trimmed)) {
+                                selectedParts.add(trimmed)
+                            }
+                            showAddBodyPartDialog = false
+                            newBodyPartInput = ""
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Add", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddBodyPartDialog = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = WarmWhite,
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
+
+    // Dialog: Confirm delete user body part
+    if (bodyPartPendingDelete != null) {
+        val part = bodyPartPendingDelete!!
+        AlertDialog(
+            onDismissRequest = { bodyPartPendingDelete = null },
+            title = {
+                Text(
+                    text = if (isHinglish) "Hissa Hatayein?" else "Remove Body Part?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = TextDark
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHinglish) {
+                        "'$part' ko aapki list se hataya jayega. Yeh un sabhi kasraton se bhi hat jayega jahan use ho raha hai."
+                    } else {
+                        "Remove '$part' from your list? It will also be removed from any exercises using it."
+                    },
+                    fontSize = 14.sp,
+                    color = TextDark
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onRemoveUserBodyPart(part)
+                        selectedParts.remove(part)
+                        bodyPartPendingDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Remove", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { bodyPartPendingDelete = null }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = WarmWhite,
+            shape = RoundedCornerShape(22.dp)
+        )
+    }
+
+    // Dialog: Exit screen (Save as Draft vs Discard vs Keep Editing)
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = {
+                Text(
+                    text = if (isHinglish) "Kasrat Chhod rahe hain?" else "Leave Exercise?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = TextDark
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHinglish) {
+                        "Aap is kasrat ko Draft ke roop mein save kar sakte hain taaki baad mein pura kar sakein, ya changes ko discard kar sakte hain."
+                    } else {
+                        "You can save this exercise as a draft to finish later, or discard your progress."
+                    },
+                    fontSize = 14.sp,
+                    color = TextDark,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitDialog = false
+                        handleSave(isDraft = true)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(if (isHinglish) "Draft Save Karein" else "Save as Draft", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showExitDialog = false
+                            if (initialTask?.isDraft == true && onDiscardDraft != null) {
+                                onDiscardDraft()
+                            } else {
+                                onBack()
+                            }
+                        }
+                    ) {
+                        Text(if (isHinglish) "Discard" else "Discard", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = { showExitDialog = false }) {
+                        Text(if (isHinglish) "Rukein" else "Keep Editing", color = TextSecondary)
+                    }
+                }
+            },
+            containerColor = WarmWhite,
+            shape = RoundedCornerShape(22.dp)
+        )
     }
 }

@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -51,6 +52,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -97,10 +100,12 @@ fun GuardianScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedTaskToDetail by remember { mutableStateOf<TaskEntity?>(null) }
+    var draftTaskToEdit by remember { mutableStateOf<TaskEntity?>(null) }
     var taskEditorSessionId by remember { mutableStateOf<Long?>(null) }
     var languageMenuExpanded by remember { mutableStateOf(false) }
 
     val isHinglish by viewModel.isHinglish.collectAsState()
+    val customBodyParts by viewModel.customBodyParts.collectAsState()
     val hasSeenAppTour by viewModel.hasSeenAppTour.collectAsState()
     var showTourDialog by remember { mutableStateOf(false) }
 
@@ -115,6 +120,7 @@ fun GuardianScreen(
     // Navigates sub-screens first, then returns to Routine tab, then switches back to Champion mode
     BackHandler {
         when {
+            draftTaskToEdit != null -> draftTaskToEdit = null
             selectedTaskToDetail != null -> selectedTaskToDetail = null
             taskEditorSessionId != null -> taskEditorSessionId = null
             selectedTab != 0 -> selectedTab = 0
@@ -131,12 +137,51 @@ fun GuardianScreen(
         return
     }
 
+    if (draftTaskToEdit != null) {
+        TaskEditorScreen(
+            sessionId = draftTaskToEdit!!.sessionId,
+            initialTask = draftTaskToEdit,
+            isHinglish = isHinglish,
+            userBodyParts = customBodyParts,
+            onAddUserBodyPart = { viewModel.addCustomBodyPart(it) },
+            onRemoveUserBodyPart = { viewModel.removeCustomBodyPart(it) },
+            onBack = { draftTaskToEdit = null },
+            onDiscardDraft = {
+                viewModel.deleteTask(draftTaskToEdit!!)
+                draftTaskToEdit = null
+            },
+            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts, isDraft ->
+                viewModel.updateTask(
+                    draftTaskToEdit!!.copy(
+                        title = title,
+                        taskType = type,
+                        targetReps = reps,
+                        targetSets = sets,
+                        targetDurationSeconds = duration,
+                        audioFilePath = audioPath,
+                        referencePhotoPath = photoPath,
+                        notes = notes,
+                        bodyParts = bodyParts,
+                        isDraft = isDraft
+                    )
+                )
+                draftTaskToEdit = null
+            }
+        )
+        return
+    }
+
     if (taskEditorSessionId != null) {
         TaskEditorScreen(
             sessionId = taskEditorSessionId!!,
             initialTask = null,
+            isHinglish = isHinglish,
+            userBodyParts = customBodyParts,
+            onAddUserBodyPart = { viewModel.addCustomBodyPart(it) },
+            onRemoveUserBodyPart = { viewModel.removeCustomBodyPart(it) },
             onBack = { taskEditorSessionId = null },
-            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts ->
+            onDiscardDraft = { taskEditorSessionId = null },
+            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts, isDraft ->
                 viewModel.createTask(
                     sessionId = taskEditorSessionId!!,
                     title = title,
@@ -147,7 +192,8 @@ fun GuardianScreen(
                     audioFilePath = audioPath,
                     referencePhotoPath = photoPath,
                     notes = notes,
-                    bodyParts = bodyParts
+                    bodyParts = bodyParts,
+                    isDraft = isDraft
                 )
                 taskEditorSessionId = null
             }
@@ -355,6 +401,7 @@ fun GuardianScreen(
                     viewModel = viewModel,
                     isHinglish = isHinglish,
                     onTaskClicked = { selectedTaskToDetail = it },
+                    onEditDraft = { draftTaskToEdit = it },
                     onAddTask = { sessionId -> taskEditorSessionId = sessionId }
                 )
                 1 -> ProgressAnalyticsView(viewModel = viewModel)
@@ -378,13 +425,17 @@ fun GuardianRoutineManager(
     viewModel: MainViewModel,
     isHinglish: Boolean = false,
     onTaskClicked: (TaskEntity) -> Unit,
+    onEditDraft: (TaskEntity) -> Unit,
     onAddTask: (sessionId: Long) -> Unit
 ) {
     val sessions by viewModel.sessions.collectAsState()
     val allTasks by viewModel.allTasks.collectAsState()
+    val isDailyKnowledgeEnabled by viewModel.isDailyKnowledgeEnabled.collectAsState()
 
     var showSessionDialog by remember { mutableStateOf(false) }
     var sessionToEdit by remember { mutableStateOf<SessionEntity?>(null) }
+    var sessionToDelete by remember { mutableStateOf<SessionEntity?>(null) }
+    var draftTaskToDelete by remember { mutableStateOf<TaskEntity?>(null) }
 
     Scaffold(
         floatingActionButton = {
@@ -421,6 +472,16 @@ fun GuardianRoutineManager(
             contentPadding = PaddingValues(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            // Daily Positive Quote & Knowledge Card (Parent mode feature)
+            if (isDailyKnowledgeEnabled) {
+                item {
+                    DailyKnowledgeCard(
+                        modifier = Modifier.padding(bottom = 2.dp),
+                        onDismiss = { viewModel.setDailyKnowledgeEnabled(false) }
+                    )
+                }
+            }
+
             if (sessions.isEmpty()) {
                 item {
                     Card(
@@ -482,12 +543,14 @@ fun GuardianRoutineManager(
                                         Text(text = session.iconEmoji, fontSize = 24.sp)
                                         Spacer(modifier = Modifier.width(10.dp))
                                     }
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = session.title,
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.Black,
-                                            color = TextDark
+                                            color = TextDark,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         if (!session.targetTime.isNullOrBlank()) {
                                             Row(
@@ -519,7 +582,7 @@ fun GuardianRoutineManager(
                                     }) {
                                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextSecondary)
                                     }
-                                    IconButton(onClick = { viewModel.deleteSession(session) }) {
+                                    IconButton(onClick = { sessionToDelete = session }) {
                                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444))
                                     }
                                 }
@@ -527,7 +590,7 @@ fun GuardianRoutineManager(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Tasks List
+                            // Tasks List (Drafts displayed prominently with draft indicator)
                             if (tasks.isEmpty()) {
                                 Text(
                                     text = if (isHinglish) "Is session mein abhi koi task nahi hai." else "No exercises added to this session yet.",
@@ -538,10 +601,18 @@ fun GuardianRoutineManager(
                             } else {
                                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                     tasks.forEach { task ->
-                                        GuardianTaskItem(
-                                            task = task,
-                                            onClick = { onTaskClicked(task) }
-                                        )
+                                        if (task.isDraft) {
+                                            GuardianDraftTaskItem(
+                                                task = task,
+                                                onEdit = { onEditDraft(task) },
+                                                onDelete = { draftTaskToDelete = task }
+                                            )
+                                        } else {
+                                            GuardianTaskItem(
+                                                task = task,
+                                                onClick = { onTaskClicked(task) }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -605,6 +676,179 @@ fun GuardianRoutineManager(
             }
         )
     }
+
+    // Session Deletion Confirmation Dialog
+    if (sessionToDelete != null) {
+        val session = sessionToDelete!!
+        AlertDialog(
+            onDismissRequest = { sessionToDelete = null },
+            title = {
+                Text(
+                    text = if (isHinglish) "Session Delete Karein?" else "Delete Routine Session?",
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHinglish)
+                        "Kya aap '${session.title}' aur iski saari kasratein delete karna chahte hain? Yeh wapas nahi aayega."
+                    else
+                        "Are you sure you want to delete '${session.title}' and all its exercises? This cannot be undone.",
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteSession(session)
+                        sessionToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(if (isHinglish) "Delete Karein" else "Delete", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sessionToDelete = null }) {
+                    Text(if (isHinglish) "Cancel" else "Cancel", color = TextSecondary, fontWeight = FontWeight.Medium)
+                }
+            },
+            containerColor = WarmWhite,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // Discard Draft Confirmation Dialog
+    if (draftTaskToDelete != null) {
+        val draftTask = draftTaskToDelete!!
+        AlertDialog(
+            onDismissRequest = { draftTaskToDelete = null },
+            title = {
+                Text(
+                    text = if (isHinglish) "Draft Discard Karein?" else "Discard Draft Exercise?",
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHinglish)
+                        "Kya aap '${draftTask.title.ifBlank { "Unfinished Exercise" }}' draft ko hatana chahte hain?"
+                    else
+                        "Are you sure you want to discard this draft exercise '${draftTask.title.ifBlank { "Unfinished Exercise" }}'?",
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteTask(draftTask)
+                        draftTaskToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(if (isHinglish) "Discard Karein" else "Discard", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { draftTaskToDelete = null }) {
+                    Text(if (isHinglish) "Cancel" else "Cancel", color = TextSecondary, fontWeight = FontWeight.Medium)
+                }
+            },
+            containerColor = WarmWhite,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+}
+
+@Composable
+fun GuardianDraftTaskItem(
+    task: TaskEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = Color(0xFFFFFBEB),
+        border = BorderStroke(1.5.dp, Color(0xFFF59E0B)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit() }
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFFEF3C7)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Draft",
+                        tint = Color(0xFFD97706),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFFDE68A),
+                            modifier = Modifier.padding(end = 6.dp)
+                        ) {
+                            Text(
+                                text = "DRAFT",
+                                color = Color(0xFFB45309),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Text(
+                            text = task.title.ifBlank { "Untitled Exercise" },
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = TextDark,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Tap to resume setup",
+                        fontSize = 12.sp,
+                        color = Color(0xFFB45309),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Discard Draft",
+                    tint = Color(0xFFEF4444),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -655,17 +899,19 @@ fun GuardianTaskItem(
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = task.title,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = TextDark
+                        color = TextDark,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (task.taskType == TaskType.EXERCISE) {
-                            val targetLabel = if (task.targetSets > 0) "${task.targetSets} sets [${task.targetReps}]" else "${task.targetReps} Reps"
+                            val targetLabel = if (task.targetSets > 0) "${task.targetSets} sets of ${task.targetReps} reps" else "${task.targetReps} Reps"
                             Text(
                                 text = targetLabel,
                                 fontSize = 13.sp,

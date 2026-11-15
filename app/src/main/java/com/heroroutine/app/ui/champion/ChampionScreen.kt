@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -216,7 +217,7 @@ fun ChampionScreen(
                     }
                 } else {
                     items(sessions, key = { it.id }) { session ->
-                        val sessionTasks = allTasks.filter { it.sessionId == session.id }
+                        val sessionTasks = allTasks.filter { it.sessionId == session.id && !it.isDraft }
                         val remainingTasks = sessionTasks.filter { !completedTaskIds.contains(it.id) }
                         val isSessionCompleted = sessionTasks.isNotEmpty() && remainingTasks.isEmpty()
 
@@ -241,7 +242,7 @@ fun ChampionScreen(
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f).padding(end = 8.dp)
                                     ) {
                                         if (session.iconEmoji.isNotBlank()) {
                                             Text(
@@ -264,7 +265,9 @@ fun ChampionScreen(
                                             text = session.title,
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Black,
-                                            color = TextDark
+                                            color = TextDark,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
 

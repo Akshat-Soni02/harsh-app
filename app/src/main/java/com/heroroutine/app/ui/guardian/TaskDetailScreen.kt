@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -75,6 +76,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -121,12 +123,15 @@ fun TaskDetailScreen(
     val allTasks by viewModel.allTasks.collectAsState()
     val allLogs by viewModel.allLogs.collectAsState()
     val allPhotos by viewModel.allPhotos.collectAsState()
+    val isHinglish by viewModel.isHinglish.collectAsState()
+    val customBodyParts by viewModel.customBodyParts.collectAsState()
 
     BackHandler { onBack() }
 
     val task = allTasks.find { it.id == taskId }
 
     var isEditing by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showAddPhotoDialog by remember { mutableStateOf(false) }
     var showPhotoSourceDialog by remember { mutableStateOf(false) }
     var photoNoteInput by remember { mutableStateOf("") }
@@ -165,8 +170,17 @@ fun TaskDetailScreen(
         TaskEditorScreen(
             sessionId = task.sessionId,
             initialTask = task,
+            isHinglish = isHinglish,
+            userBodyParts = customBodyParts,
+            onAddUserBodyPart = { viewModel.addCustomBodyPart(it) },
+            onRemoveUserBodyPart = { viewModel.removeCustomBodyPart(it) },
             onBack = { isEditing = false },
-            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts ->
+            onDiscardDraft = {
+                viewModel.deleteTask(task)
+                isEditing = false
+                onBack()
+            },
+            onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts, isDraft ->
                 viewModel.updateTask(
                     task.copy(
                         title = title,
@@ -177,7 +191,8 @@ fun TaskDetailScreen(
                         audioFilePath = audioPath,
                         referencePhotoPath = photoPath,
                         notes = notes,
-                        bodyParts = bodyParts
+                        bodyParts = bodyParts,
+                        isDraft = isDraft
                     )
                 )
                 isEditing = false
@@ -197,7 +212,9 @@ fun TaskDetailScreen(
                         text = task.title,
                         fontWeight = FontWeight.Black,
                         fontSize = 18.sp,
-                        color = TextDark
+                        color = TextDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
@@ -209,10 +226,7 @@ fun TaskDetailScreen(
                     IconButton(onClick = { isEditing = true }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextSecondary)
                     }
-                    IconButton(onClick = {
-                        viewModel.deleteTask(task)
-                        onBack()
-                    }) {
+                    IconButton(onClick = { showDeleteConfirmDialog = true }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444))
                     }
                 },
@@ -271,17 +285,19 @@ fun TaskDetailScreen(
                                 text = task.title,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 18.sp,
-                                color = TextDark
+                                color = TextDark,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
 
                             Spacer(modifier = Modifier.height(4.dp))
 
                             if (task.taskType == TaskType.EXERCISE) {
-                                val targetFormat = if (task.targetSets > 0) "${task.targetSets} sets [${task.targetReps}]" else "${task.targetReps} Reps"
+                                val targetFormat = if (task.targetSets > 0) "${task.targetSets} sets of ${task.targetReps} reps" else "${task.targetReps} Reps"
                                 Text(
                                     text = targetFormat,
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 20.sp,
+                                    fontSize = 18.sp,
                                     color = WarmOrange
                                 )
                             } else {
@@ -600,6 +616,51 @@ fun TaskDetailScreen(
             onSelectGallery = {
                 photoPickerLauncher.launch("image/*")
             }
+        )
+    }
+
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = {
+                Text(
+                    text = if (isHinglish) "Kasrat Hatayein?" else "Delete Task?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = TextDark
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHinglish) {
+                        "'${task.title}' ko hatane ke baad iska saara data hat jayega. Kya aap hatana chahte hain?"
+                    } else {
+                        "Delete '${task.title}'? This action cannot be undone."
+                    },
+                    fontSize = 14.sp,
+                    color = TextDark
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        viewModel.deleteTask(task)
+                        onBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = WarmWhite,
+            shape = RoundedCornerShape(22.dp)
         )
     }
 }
