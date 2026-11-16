@@ -146,10 +146,6 @@ fun GuardianScreen(
             onAddUserBodyPart = { viewModel.addCustomBodyPart(it) },
             onRemoveUserBodyPart = { viewModel.removeCustomBodyPart(it) },
             onBack = { draftTaskToEdit = null },
-            onDiscardDraft = {
-                viewModel.deleteTask(draftTaskToEdit!!)
-                draftTaskToEdit = null
-            },
             onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts, isDraft ->
                 viewModel.updateTask(
                     draftTaskToEdit!!.copy(
@@ -180,7 +176,6 @@ fun GuardianScreen(
             onAddUserBodyPart = { viewModel.addCustomBodyPart(it) },
             onRemoveUserBodyPart = { viewModel.removeCustomBodyPart(it) },
             onBack = { taskEditorSessionId = null },
-            onDiscardDraft = { taskEditorSessionId = null },
             onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts, isDraft ->
                 viewModel.createTask(
                     sessionId = taskEditorSessionId!!,
@@ -435,7 +430,6 @@ fun GuardianRoutineManager(
     var showSessionDialog by remember { mutableStateOf(false) }
     var sessionToEdit by remember { mutableStateOf<SessionEntity?>(null) }
     var sessionToDelete by remember { mutableStateOf<SessionEntity?>(null) }
-    var draftTaskToDelete by remember { mutableStateOf<TaskEntity?>(null) }
 
     Scaffold(
         floatingActionButton = {
@@ -605,7 +599,7 @@ fun GuardianRoutineManager(
                                             GuardianDraftTaskItem(
                                                 task = task,
                                                 onEdit = { onEditDraft(task) },
-                                                onDelete = { draftTaskToDelete = task }
+                                                onDelete = { viewModel.deleteTask(task) }
                                             )
                                         } else {
                                             GuardianTaskItem(
@@ -713,50 +707,6 @@ fun GuardianRoutineManager(
             },
             dismissButton = {
                 TextButton(onClick = { sessionToDelete = null }) {
-                    Text(if (isHinglish) "Cancel" else "Cancel", color = TextSecondary, fontWeight = FontWeight.Medium)
-                }
-            },
-            containerColor = WarmWhite,
-            shape = RoundedCornerShape(20.dp)
-        )
-    }
-
-    // Discard Draft Confirmation Dialog
-    if (draftTaskToDelete != null) {
-        val draftTask = draftTaskToDelete!!
-        AlertDialog(
-            onDismissRequest = { draftTaskToDelete = null },
-            title = {
-                Text(
-                    text = if (isHinglish) "Draft Discard Karein?" else "Discard Draft Exercise?",
-                    fontWeight = FontWeight.Bold,
-                    color = TextDark
-                )
-            },
-            text = {
-                Text(
-                    text = if (isHinglish)
-                        "Kya aap '${draftTask.title.ifBlank { "Unfinished Exercise" }}' draft ko hatana chahte hain?"
-                    else
-                        "Are you sure you want to discard this draft exercise '${draftTask.title.ifBlank { "Unfinished Exercise" }}'?",
-                    color = TextSecondary,
-                    fontSize = 14.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.deleteTask(draftTask)
-                        draftTaskToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(if (isHinglish) "Discard Karein" else "Discard", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { draftTaskToDelete = null }) {
                     Text(if (isHinglish) "Cancel" else "Cancel", color = TextSecondary, fontWeight = FontWeight.Medium)
                 }
             },

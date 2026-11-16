@@ -51,8 +51,8 @@ defaultConfig {
     applicationId = "com.heroroutine.app"
     minSdk = 26
     targetSdk = 34
-    versionCode = 5       // <-- Increment this (1 -> 2 -> 3 -> 4 -> 5 ...) for each update
-    versionName = "1.3.0" // <-- User-visible version string
+    versionCode = 6       // <-- Increment this (1 -> 2 -> 3 -> 4 -> 5 -> 6 ...) for each update
+    versionName = "1.3.1" // <-- User-visible version string
 }
 ```
 

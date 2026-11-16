@@ -107,7 +107,6 @@ fun TaskEditorScreen(
     onAddUserBodyPart: (String) -> Unit = {},
     onRemoveUserBodyPart: (String) -> Unit = {},
     onBack: () -> Unit,
-    onDiscardDraft: (() -> Unit)? = null,
     onSave: (
         title: String,
         type: TaskType,
@@ -155,9 +154,6 @@ fun TaskEditorScreen(
 
     var isRecording by remember { mutableStateOf(false) }
     var isPlayingPreview by remember { mutableStateOf(false) }
-
-    // Draft / Exit confirmation state
-    var showExitDialog by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -225,9 +221,10 @@ fun TaskEditorScreen(
 
     fun handleBackAttempt() {
         val hasChanges = title.isNotBlank() || audioPath != null || photoPath != null ||
-                notes.isNotBlank() || selectedParts.isNotEmpty() || (initialTask?.isDraft == true)
-        if (hasChanges) {
-            showExitDialog = true
+                notes.isNotBlank() || selectedParts.isNotEmpty()
+        if (hasChanges && (initialTask == null || initialTask.isDraft)) {
+            // Silently save as draft so user can resume later without losing anything
+            handleSave(isDraft = true)
         } else {
             onBack()
         }
@@ -256,19 +253,6 @@ fun TaskEditorScreen(
                     }
                 },
                 actions = {
-                    if (initialTask == null || initialTask.isDraft) {
-                        TextButton(
-                            onClick = { handleSave(isDraft = true) },
-                            modifier = Modifier.padding(end = 4.dp)
-                        ) {
-                            Text(
-                                text = if (isHinglish) "Draft Rakhein" else "Save Draft",
-                                fontWeight = FontWeight.Bold,
-                                color = WarmOrange,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
                     Button(
                         onClick = { handleSave(isDraft = false) },
                         colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
@@ -314,25 +298,32 @@ fun TaskEditorScreen(
                         color = TextDark
                     )
 
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Task Name") },
-                        placeholder = {
-                            Text(
-                                "e.g. Arm Stretch, Ball Catch",
-                                fontSize = 13.sp,
-                                color = Color(0xFF94A3B8),
-                                fontWeight = FontWeight.Normal
-                            )
-                        },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = WarmOrange,
-                            unfocusedBorderColor = WarmCardBorder
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = if (isHinglish) "Kasrat / Task ka Naam" else "Task Name",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = TextSecondary
+                        )
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            placeholder = {
+                                Text(
+                                    "e.g. Arm Stretch, Ball Catch",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFFA0AEC0),
+                                    fontWeight = FontWeight.Normal
+                                )
+                            },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = WarmOrange,
+                                unfocusedBorderColor = WarmCardBorder
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
                     Column {
                         Text(
@@ -707,7 +698,7 @@ fun TaskEditorScreen(
                                 }
                             }
 
-                            // Distinct "+ Add Body Part" chip
+                            // Distinct "+" chip
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = MintGreenSoft,
@@ -717,22 +708,15 @@ fun TaskEditorScreen(
                                     showAddBodyPartDialog = true
                                 }
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = "Add Body Part",
                                         tint = MintGreen,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (isHinglish) "+ Naya Hissa Jodein" else "+ Add Body Part",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MintGreen
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
@@ -1053,25 +1037,32 @@ fun TaskEditorScreen(
                 )
             },
             text = {
-                OutlinedTextField(
-                    value = newBodyPartInput,
-                    onValueChange = { newBodyPartInput = it },
-                    label = { Text("Body Part Name") },
-                    placeholder = {
-                        Text(
-                            "e.g. Left Knee, Ankles",
-                            fontSize = 13.sp,
-                            color = Color(0xFF94A3B8),
-                            fontWeight = FontWeight.Normal
-                        )
-                    },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = WarmOrange,
-                        unfocusedBorderColor = WarmCardBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = if (isHinglish) "Hisse ka Naam" else "Body Part Name",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextDark
+                    )
+                    OutlinedTextField(
+                        value = newBodyPartInput,
+                        onValueChange = { newBodyPartInput = it },
+                        placeholder = {
+                            Text(
+                                "e.g. Left Knee, Ankles",
+                                fontSize = 13.sp,
+                                color = Color(0xFFA0AEC0),
+                                fontWeight = FontWeight.Normal
+                            )
+                        },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = WarmOrange,
+                            unfocusedBorderColor = WarmCardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             confirmButton = {
                 Button(
@@ -1142,66 +1133,6 @@ fun TaskEditorScreen(
             dismissButton = {
                 TextButton(onClick = { bodyPartPendingDelete = null }) {
                     Text("Cancel", color = TextSecondary)
-                }
-            },
-            containerColor = WarmWhite,
-            shape = RoundedCornerShape(22.dp)
-        )
-    }
-
-    // Dialog: Exit screen (Save as Draft vs Discard vs Keep Editing)
-    if (showExitDialog) {
-        AlertDialog(
-            onDismissRequest = { showExitDialog = false },
-            title = {
-                Text(
-                    text = if (isHinglish) "Kasrat Chhod rahe hain?" else "Leave Exercise?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = TextDark
-                )
-            },
-            text = {
-                Text(
-                    text = if (isHinglish) {
-                        "Aap is kasrat ko Draft ke roop mein save kar sakte hain taaki baad mein pura kar sakein, ya changes ko discard kar sakte hain."
-                    } else {
-                        "You can save this exercise as a draft to finish later, or discard your progress."
-                    },
-                    fontSize = 14.sp,
-                    color = TextDark,
-                    lineHeight = 20.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showExitDialog = false
-                        handleSave(isDraft = true)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = WarmOrange),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(if (isHinglish) "Draft Save Karein" else "Save as Draft", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(
-                        onClick = {
-                            showExitDialog = false
-                            if (initialTask?.isDraft == true && onDiscardDraft != null) {
-                                onDiscardDraft()
-                            } else {
-                                onBack()
-                            }
-                        }
-                    ) {
-                        Text(if (isHinglish) "Discard" else "Discard", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
-                    }
-                    TextButton(onClick = { showExitDialog = false }) {
-                        Text(if (isHinglish) "Rukein" else "Keep Editing", color = TextSecondary)
-                    }
                 }
             },
             containerColor = WarmWhite,

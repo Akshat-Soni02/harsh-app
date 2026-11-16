@@ -175,11 +175,6 @@ fun TaskDetailScreen(
             onAddUserBodyPart = { viewModel.addCustomBodyPart(it) },
             onRemoveUserBodyPart = { viewModel.removeCustomBodyPart(it) },
             onBack = { isEditing = false },
-            onDiscardDraft = {
-                viewModel.deleteTask(task)
-                isEditing = false
-                onBack()
-            },
             onSave = { title, type, reps, sets, duration, audioPath, photoPath, notes, bodyParts, isDraft ->
                 viewModel.updateTask(
                     task.copy(

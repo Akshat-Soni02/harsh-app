@@ -126,25 +126,32 @@ fun SessionEditorDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Session Name") },
-                    placeholder = {
-                        Text(
-                            "e.g. Morning Routine, Evening Stretch",
-                            fontSize = 13.sp,
-                            color = Color(0xFF94A3B8),
-                            fontWeight = FontWeight.Normal
-                        )
-                    },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = WarmOrange,
-                        unfocusedBorderColor = WarmCardBorder
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Session Name",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = TextSecondary
+                    )
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = {
+                            Text(
+                                "e.g. Morning Routine, Evening Stretch",
+                                fontSize = 13.sp,
+                                color = Color(0xFFA0AEC0),
+                                fontWeight = FontWeight.Normal
+                            )
+                        },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = WarmOrange,
+                            unfocusedBorderColor = WarmCardBorder
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Text("Session Icon:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextDark)
 
